@@ -2,17 +2,18 @@
 #define __UART_H__
 #include "config.h"
 #include "common.h"
+#include "spinlock.h"
 typedef struct OPTIMIZATION_ALIGN(4)
 {
     REG u8 data;
-    Reserved _Reserved0[3];
+    _Reserved _Reserved0[3];
     //Receive Status
     //reset 0x0
     REG u32 receive_status;
-    Reserved _Reserved1[16];
+    _Reserved _Reserved1[16];
     //reset 0b-10010---
     REG u32 flag;
-    Reserved _Reserved2[4];
+    _Reserved _Reserved2[4];
     //rest 0x00
     REG u32 lp_counter;
     REG u32 baud_rate[2];
@@ -22,7 +23,6 @@ typedef struct OPTIMIZATION_ALIGN(4)
     REG u32 control;
 } Pl011Uart;
  
-static Pl011Uart *UART = (Pl011Uart*)UART_REGISTER_ADDR;
 
 #define UART_FLAGS() (UART->flag)
 
@@ -38,20 +38,9 @@ static Pl011Uart *UART = (Pl011Uart*)UART_REGISTER_ADDR;
 
 #define TX_READY() (!IS_BUSY() && !TX_IS_FULL())
 
-static inline u32 read_char(char *buffer, u32 size){
-    while (!RX_READY());
-    u32 i;
-    for (i = 0; i < size; i++)
-        buffer[i] = UART->data;
-    return i;
-}
-
-static inline void puts(char *buffer) {
-    while (!TX_READY());
-    while (*buffer)
-    {
-        UART->data = *buffer;
-        buffer ++;
-    }    
-}
+void init_uart();
+char getc();
+void putc(char c);
+void puts(char *buffer);
+u32 gets(char *buffer, u32 size);
 #endif //__UART_H__

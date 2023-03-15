@@ -20,7 +20,7 @@ typedef u32 bool;
 #define true 1
 #define false 0
 #define NULL ((void*)0)
-typedef u8 Reserved;
+typedef u8 _Reserved;
 
 #define USIZE_MAX	(~(usize)0)
 #define ISIZE_MAX	((usize)(USIZE_MAX >> 1))

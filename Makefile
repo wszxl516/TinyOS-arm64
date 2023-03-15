@@ -19,7 +19,7 @@ override QEMU = qemu-system-aarch64
 override AS := $(CC)
 
 # build args
-override CFLAGS  = -g -Wall -MMD -fno-builtin -nostdinc
+override CFLAGS  = -g -Wall -MMD -fno-builtin -nostdinc -march=armv8.2-a
 override LDFLAGS = -T linker.ld -nostdlib -g -Wl,--Map=$(BUILD_DIR)/kernel.map -nostartfiles -Wl,--no-warn-rwx-segment
 override EX_CFLAGS :=
 
@@ -40,7 +40,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -name "*.h" -
 # -drive if=none,file=hd.img,format=raw,id=hd0
 define QEMU_ARGS
 		-smp 2 \
-		-cpu cortex-a72 \
+		-cpu cortex-a76 \
 		-machine virt \
 		-chardev stdio,id=ttys0 \
 		-serial chardev:ttys0 \
@@ -68,7 +68,6 @@ $(OUT_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	@$(CC) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
 
 $(OUT_ARCH_DIR)/%_s.o: $(ARCH_DIR)/%.S $(HEADERS)
-	@echo [CC] $<
 	@echo [AS] $<
 	@mkdir -p $(dir $@)
 	@$(AS) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
