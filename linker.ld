@@ -1,41 +1,38 @@
-ENTRY(_entry)
-BASE_ADDRESS = 0xffff000040080000;
-
-SECTIONS
-{
-    . = BASE_ADDRESS;
-    start_kernel = .;
-
-    .text : {
-        start_text = .;
-        *(.text.entry)
-        *(.text .text.*)
+ENTRY(_entry);
+ 
+base_addr = 0x40000000;
+ 
+SECTIONS {
+    . = base_addr;
+	PROVIDE(text_start = .);
+	.text : ALIGN(4K) {
+		*(.init);
+		*(.text);
         . = ALIGN(4K);
-        end_text = .;
-    }
+	}
 
-    .rodata : {
-        start_ro_data = .;
-        . = ALIGN(4K);
-        end_ro_data = .;
-    }
+	.bss : ALIGN(4K) {
+		PROVIDE(bss_start = .);
+		*(.bss);
+		. += 4096;
+		PROVIDE(bss_end = .);
+	}
 
-    .data : {
-        start_data = .;
-        . = ALIGN(4K);
-        end_data = .;
-    }
+	.rodata : ALIGN(4K) {
+		*(.rodata);
+	}
 
-    .bss : {
-        start_bss = .;
-        . = ALIGN(4K);
-        end_bss = .;
-    }
-    .stack : {
-        boot_stack = .;
-        . += 4k * 4;
-        . = ALIGN(4K);
-        boot_stack_top = .;
-    }
-    end_kernel = .;
+	.data : ALIGN(4K) {
+		*(.data);
+	}
+
+	.stack : ALIGN(4k) {
+		. += 4096;
+		PROVIDE(stack_bottom = .);
+		. += 4096 * 4;
+		PROVIDE(stack_top = .);
+		. += 4096;
+	}
+	
+	PROVIDE(heap_start = .);
 }
