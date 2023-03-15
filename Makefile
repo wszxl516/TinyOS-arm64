@@ -19,7 +19,7 @@ override QEMU = qemu-system-aarch64
 override AS := $(CC)
 
 # build args
-override CFLAGS  = -g -Wall -MMD -fno-builtin -nostdinc -march=armv8.2-a
+override CFLAGS  = -g -Wall -Wextra -MMD -fno-builtin -nostdinc -march=armv8.2-a -mcpu=cortex-a76
 override LDFLAGS = -T linker.ld -nostdlib -g -Wl,--Map=$(BUILD_DIR)/kernel.map -nostartfiles -Wl,--no-warn-rwx-segment
 override EX_CFLAGS :=
 

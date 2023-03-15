@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "string.h"
 STATIC_INIT_SPIN_LOCK(SECTION("device") UART_LOCK);
 static Pl011Uart SECTION("device") *UART = (Pl011Uart*)UART_REGISTER_ADDR;
 

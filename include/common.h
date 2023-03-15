@@ -16,14 +16,11 @@
 #define REG_READ32(addr) 	        REG_READ(addr, u32)
 #define GET_BIT(data, bit_sht) ((data >> bit_sht)&1)
 
-
-static inline void memset(void *ptr, u32 size, u8 value)
-{
-    for (u32 i = 0; i < size; i++)
-    {
-        *(char*)ptr = value;
-        ptr ++;
-    }
-    
-}
+#define OFFSET_OF(TYPE, MEMBER) ((usize) &((TYPE*)0)->MEMBER)
+#define CONTAINER_OF(ptr, type, member) ({ \
+        const typeof( ((type *)0)->member ) *__mptr = \
+        (const typeof( ((type *)0)->member ) *)(ptr); \
+        (type *)( (char *)__mptr - OFFSET_OF(type, member) ); \
+        })
+        
 #endif //__COMMON_H__
