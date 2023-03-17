@@ -5,7 +5,8 @@ typedef void (ld_script_pointer_t)();
 
 //uart
 #define UART_REGISTER_ADDR  0x09000000LLU
-
+//
+#define SMP_CORE_COUNT      2
 //ld script section address
 extern ld_script_pointer_t stack_top, stack_bottom;
 extern ld_script_pointer_t bss_start, bss_end;

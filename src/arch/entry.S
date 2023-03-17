@@ -8,5 +8,6 @@ _entry:
     isb
     ldr     x30, =stack_top
     mov     sp, x30
+    bl      parse_featrue
     ldr     x30, =kernel_main
     br      x30
