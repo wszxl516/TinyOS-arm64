@@ -1,10 +1,11 @@
 #include "uart.h"
 #include "printf.h"
 #include "common.h"
+#include "feature.h"
 
 void FUNC_NORETURN kernel_main(){
     init_uart();
-    pr_info("Started!\n");
+    processor_feature();
     char buffer[16] = {0};
     while (1){
         gets(buffer, 16);

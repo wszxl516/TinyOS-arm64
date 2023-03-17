@@ -12,6 +12,7 @@ override OUT_DIR:=$(BUILD_DIR)/obj
 override OUT_ARCH_DIR:=$(OUT_DIR)/arch
 
 # build tools
+# override CC := clang --target=aarch64-none-unknown-elf --sysroot=/usr/aarch64-none-elf/
 override CC := aarch64-none-elf-gcc
 override GDB := aarch64-linux-gnu-gdb
 override OBJCOPY := aarch64-none-elf-objcopy
@@ -19,8 +20,8 @@ override QEMU = qemu-system-aarch64
 override AS := $(CC)
 
 # build args
-override CFLAGS  = -g -Wall -Wextra -MMD -fno-builtin -nostdinc -march=armv8.2-a -mcpu=cortex-a76
-override LDFLAGS = -T linker.ld -nostdlib -g -Wl,--Map=$(BUILD_DIR)/kernel.map -nostartfiles -Wl,--no-warn-rwx-segment
+override CFLAGS  = -g -Wall -Wextra -MMD -fno-builtin -nostdinc -march=armv8.2-a -mcpu=cortex-a76 -Wa,-mcpu=cortex-a76 -ffreestanding
+override LDFLAGS = -T linker.ld -nostdlib -g -Wl,--Map=$(BUILD_DIR)/kernel.map -nostartfiles -Wl,--no-warn-rwx-segment -Wa,-mcpu=cortex-a76
 override EX_CFLAGS :=
 
 # build file

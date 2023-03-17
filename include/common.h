@@ -15,6 +15,12 @@
 #define REG_WRITE32(addr, value) 	REG_WRITE(addr, u32, value)
 #define REG_READ32(addr) 	        REG_READ(addr, u32)
 #define GET_BIT(data, bit_sht) ((data >> bit_sht)&1)
+#define GET_BITS(data, start, end) ({\
+        usize value = 0; \
+        for (u32 i = start; i <= end; i++) \
+                value |= GET_BIT(data, i) << (i - start); \
+        value;\
+})
 
 #define OFFSET_OF(TYPE, MEMBER) ((usize) &((TYPE*)0)->MEMBER)
 #define CONTAINER_OF(ptr, type, member) ({ \
