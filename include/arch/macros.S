@@ -1,14 +1,13 @@
 .altmacro
 .macro SAVE_XN n
-    sd x\n, (\n )*8(sp)
+    str x\n, [sp,(\n )*8]
 .endm
 
 .macro LOAD_XN n
-    ld x\n , (\n )*8(sp)
+    ldr x\n , [sp,(\n )*8]
 .endm
 
 .macro SAVE_GENERIC_REG start end
-    sub sp, sp, (end - start) * 8
     .set n, start
     .rept end - start
             SAVE_XN %n

@@ -12,5 +12,5 @@ extern ld_script_pointer_t stack_top, stack_bottom;
 extern ld_script_pointer_t bss_start, bss_end;
 extern ld_script_pointer_t heap_start, text_start;
 extern ld_script_pointer_t device_start, device_end;
-
+extern ld_script_pointer_t trap_vector;
 #endif //__CONFIG_H__

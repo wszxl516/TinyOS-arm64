@@ -39,6 +39,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -name "*.h" -
 # -global virtio-mmio.force-legacy=false
 # -device virtio-blk-device,scsi=off,drive=hd0
 # -drive if=none,file=hd.img,format=raw,id=hd0
+# -kernel $(BUILD_DIR)/$(TARGET).bin
 define QEMU_ARGS
 		-smp 2 \
 		-cpu cortex-a76 \
@@ -47,7 +48,8 @@ define QEMU_ARGS
 		-serial chardev:ttys0 \
 		-monitor tcp::1122,server,nowait \
 		-nographic \
-		-kernel $(BUILD_DIR)/$(TARGET)
+		-device loader,file=$(BUILD_DIR)/$(TARGET),addr=0x040100000 \
+		-device loader,addr=0x040100000,cpu-num=0
 endef
 
 # Depencies
@@ -79,7 +81,7 @@ $(TARGET): pre_check $(OBJS)
 
 $(BUILD_DIR)/$(TARGET).bin: pre_check $(TARGET)
 	@echo [BIN] $@
-	@$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET).bin
+	@$(OBJCOPY) --strip-all -O binary $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET).bin
 
 
 # build taget

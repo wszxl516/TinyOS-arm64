@@ -1,6 +1,6 @@
 ENTRY(_entry);
  
-base_addr = 0x40000000;
+base_addr = 0x40100000;
  
 SECTIONS {
     . = base_addr;
