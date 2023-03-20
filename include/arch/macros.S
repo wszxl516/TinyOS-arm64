@@ -21,7 +21,6 @@
             LOAD_XN %n
             .set n, n + 1
     .endr
-    add sp, sp, (end - start) * 8
 .endm
 
     
