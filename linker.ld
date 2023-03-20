@@ -14,7 +14,7 @@ SECTIONS {
 	.bss : ALIGN(4K) {
 		PROVIDE(bss_start = .);
 		*(.bss);
-		. += 4096;
+		. += 0x1000;
 		PROVIDE(bss_end = .);
 	}
 
@@ -30,13 +30,16 @@ SECTIONS {
 		PROVIDE(device_start = .);
 		PROVIDE(device_end = .);
 	}
-	
+	.pagetable : ALIGN(4k) {
+		. = ALIGN(0x1000);
+		PROVIDE(page_table_start = .);
+	}
 	.stack : ALIGN(4k) {
-		. += 4096;
+		. += 0x1000;
 		PROVIDE(stack_bottom = .);
-		. += 4096 * 4;
+		. += 0x1000 * 4;
 		PROVIDE(stack_top = .);
-		. += 4096;
+		. += 0x1000;
 	}
 	
 	PROVIDE(heap_start = .);

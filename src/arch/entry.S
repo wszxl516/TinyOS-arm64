@@ -20,6 +20,7 @@ primary:
     adrp    x8, stack_top
     mov     sp, x8
     bl      setup_trap
+    bl      setup_mmu
     bl      parse_featrue
     ldr     x8, =kernel_main
     br      x8

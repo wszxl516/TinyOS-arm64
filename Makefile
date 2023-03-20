@@ -91,8 +91,9 @@ all: bin
 
 bin: $(BUILD_DIR)/$(TARGET).bin
 
+#@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 debug: all
-	/usr/bin/xfce4-terminal -e \
+	@/usr/bin/xfce4-terminal -e \
 		'$(QEMU) $(QEMU_ARGS) -s -S'
 	#@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 	@$(GDB) $(BUILD_DIR)/$(TARGET) -ex "target remote :1234"

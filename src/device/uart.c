@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "string.h"
+#include "mmu.h"
 STATIC_INIT_SPIN_LOCK(SECTION("device") UART_LOCK);
 static Pl011Uart SECTION("device") *UART = (Pl011Uart*)UART_REGISTER_ADDR;
 
@@ -21,6 +22,7 @@ void putc(char c) {
 
 void init_uart()
 {
+    UART = (Pl011Uart*) VIRT_UART_BASE;
     UART->receive_status = 0;
     UART->flag = 0x90;
     UART->lp_counter = 0x00;
