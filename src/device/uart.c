@@ -22,7 +22,7 @@ void putc(char c) {
 
 void init_uart()
 {
-    UART = (Pl011Uart*) VIRT_UART_BASE;
+    UART = (Pl011Uart*) (PHY_2_VIR(UART_REGISTER_ADDR));
     UART->receive_status = 0;
     UART->flag = 0x90;
     UART->lp_counter = 0x00;

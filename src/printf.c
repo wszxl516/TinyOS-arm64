@@ -298,6 +298,8 @@ void k_format(void *putp, putcf putf, const char *fmt, va_list va)
                     i2a(va_arg(va, int), &p);
                 putchw(putp, putf, &p);
                 break;
+            case 'P':
+                /* fall through */
             case 'p':
                 p.alt = 1;
                 lng = 2;
