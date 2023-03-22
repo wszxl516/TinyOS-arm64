@@ -63,7 +63,7 @@ sync_current_el_spx:
 
 .balign 128
 irq_current_el_spx:
-    WITH_CONTEXT_CALL dump_error
+    WITH_CONTEXT_CALL handle_irq
     eret
 
 .balign 128
@@ -87,7 +87,7 @@ sync_lower_el_aarch64:
 
 .balign 128
 irq_lower_el_aarch64:
-    WITH_CONTEXT_CALL dump_error
+    WITH_CONTEXT_CALL handle_irq
     eret
 
 .balign 128
