@@ -5,6 +5,7 @@ typedef void (ld_script_pointer_t)();
 
 //uart
 #define UART_REGISTER_ADDR               (0x09000000LLU)
+#define GIC_BASE_ADDR                    (0x8000000LLU)
 //
 #define SMP_CORE_COUNT      2
 //ld script section address

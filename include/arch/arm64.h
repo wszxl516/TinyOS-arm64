@@ -12,13 +12,13 @@
 
 //write generic register
 #define REG_WRITE_G(name, value) ({ \
-	__asm__ volatile("mov " #name ", %0" : : "r"(value)); \
+	__asm__ volatile("mov " #name ", %0" : : "r"(value) : "memory"); \
 })
 
 //read Privileged register
 #define REG_READ_P(name)  ({ \
 	usize value = 0; \
-	__asm__ volatile("mrs %0," #name :"=r"(value)); \
+	__asm__ __volatile__("mrs %0," #name : "=r"(value) : : "memory"); \
 	value; \
 	})
 
@@ -31,4 +31,14 @@
 #define REG_UPDATE_G(name, value) REG_WRITE_G(name, (REG_READ_G(name) | value))
 
 #define CURRENT_EL()	GET_BITS(REG_READ_P(CurrentEL), 2, 3)
+
+
+static inline void disable_irq(void)
+{
+	__asm__ __volatile__("msr DAIFSet, %0\n\t" : : "i" (1 << 1)  : "memory");
+}
+static inline void enable_irq(void)
+{
+	__asm__ __volatile__("msr DAIFClr, %0\n\t" : : "i" (1 << 1)  : "memory");
+}
 #endif //__CPU_H__

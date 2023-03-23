@@ -32,22 +32,22 @@ trap_vector:
 // ------------------------------------------------------------
 // Current EL with SP0
 // ------------------------------------------------------------
-.balign 128
+.align 11
 sync_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.balign 128
+.align 11
 irq_current_el_sp0:
-    WITH_CONTEXT_CALL dump_error
+    WITH_CONTEXT_CALL handle_irq
     eret
 
-.balign 128
+.align 11
 fiq_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.balign 128
+.align 11
 serror_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
@@ -56,22 +56,22 @@ serror_current_el_sp0:
 // Current EL with SPx
 // ------------------------------------------------------------
 
-.balign 128
+.align 11
 sync_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.balign 128
+.align 11
 irq_current_el_spx:
     WITH_CONTEXT_CALL handle_irq
     eret
 
-.balign 128
+.align 11
 fiq_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.balign 128
+.align 11
 serror_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
@@ -80,22 +80,22 @@ serror_current_el_spx:
 // Lower EL using AArch64
 // ------------------------------------------------------------
 
-.balign 128
+.align 11
 sync_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret                  
 
-.balign 128
+.align 11
 irq_lower_el_aarch64:
     WITH_CONTEXT_CALL handle_irq
     eret
 
-.balign 128
+.align 11
 fiq_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.balign 128
+.align 11
 serror_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret

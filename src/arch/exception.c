@@ -2,7 +2,8 @@
 #include "printf.h"
 #include "common.h"
 #include "exception.h"
-
+#include "timer.h"
+#include "gic.h"
 
 void dump_trap_fram(trap_frame *frame){
     for (u32 i = 0; i < 31; i++)
@@ -26,7 +27,19 @@ void dump_error(trap_frame *frame){
 }
 
 
-void handle_irq(trap_frame *frame){
-    pr_notice("\n\nsyscall from:\n\t pc: 0x%012x sp: 0x%012x\n", frame->regs[30], frame->usp);
-    while (true);
+void handle_irq(trap_frame *frame __UNUSED__){
+    disable_irq();
+    i32 irq;
+    if( gic_fetch_irq(&irq) == IRQ_NOT_FOUND ){
+        pr_info("IRQ not found!\n");
+    }
+
+    switch(irq){
+        case TIMER_IRQ:
+            timer_handler();
+            break;
+        default:
+            break;
+    }
+    enable_irq();
 }

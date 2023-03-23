@@ -47,6 +47,7 @@ void setup_mmu(){
     early_map(MEM_BASE, MMU_FLAGS);
     //map 0x09000000 for uart
     early_map(UART_REGISTER_ADDR, MMU_DEVICE_FLAGS);
+    early_map(GIC_BASE_ADDR, MMU_DEVICE_FLAGS);
     /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
     enable_mmu(pg_tbl0, pg_tbl0);
     pr_info("#####################################\n");

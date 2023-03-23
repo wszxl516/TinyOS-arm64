@@ -26,11 +26,10 @@ override EX_CFLAGS :=
 
 # build file
 override C_SRCS := $(shell find $(SRC_DIR) -name "*.c")
-override ARCH_SRCS := $(shell find $(ARCH_DIR) -name "*.S")
-override OBJS = $(C_SRCS:$(SRC_DIR)/%.c= $(OUT_DIR)/%.o)
-override OBJS += $(ARCH_SRCS:$(SRC_DIR)/%.S=$(OUT_DIR)/%_s.o)
-override HEADERS = $(sort $(shell find $(INC_DIR) -name "*.h";))
-override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -name "*.h" -exec dirname {} \;)))
+override ASM_SRCS := $(shell find $(ARCH_DIR) -name "*.S")
+override OBJS = $(C_SRCS:$(SRC_DIR)/%.c= $(OUT_DIR)/%.o) $(ASM_SRCS:$(SRC_DIR)/%.S=$(OUT_DIR)/%_s.o)
+override HEADERS = $(sort $(shell find $(INC_DIR) -name "*.h" -or -name "*.S";))
+override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -type d))) 
 
 # qemu args
 # -device sdhci-pci -device sd-card,drive=hd0
@@ -43,7 +42,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -name "*.h" -
 define QEMU_ARGS
 		-smp 2 \
 		-cpu cortex-a76 \
-		-machine virt \
+		-machine virt,gic-version=2 \
 		-chardev stdio,id=ttys0 \
 		-serial chardev:ttys0 \
 		-monitor tcp::1122,server,nowait \
@@ -65,12 +64,12 @@ pre_check:
 	@mkdir -p $(OUT_DIR)
 
 # build compile and link
-$(OUT_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+$(OUT_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) $(ASM_HEADERS)
 	@echo [CC] $<
 	@mkdir -p $(dir $@)
 	@$(CC) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
 
-$(OUT_ARCH_DIR)/%_s.o: $(ARCH_DIR)/%.S $(HEADERS)
+$(OUT_ARCH_DIR)/%_s.o: $(ARCH_DIR)/%.S $(HEADERS) $(ASM_HEADERS)
 	@echo [AS] $<
 	@mkdir -p $(dir $@)
 	@$(AS) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
@@ -79,7 +78,7 @@ $(TARGET): pre_check $(OBJS)
 	@echo [LINK] $@
 	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(OBJS) $(CFLAGS) $(LDFLAGS) $(EX_CFLAGS)
 
-$(BUILD_DIR)/$(TARGET).bin: pre_check $(TARGET)
+$(TARGET).bin: pre_check $(TARGET)
 	@echo [BIN] $@
 	@$(OBJCOPY) --strip-all -O binary $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET).bin
 
@@ -89,12 +88,12 @@ $(BUILD_DIR)/$(TARGET).bin: pre_check $(TARGET)
 
 all: bin
 
-bin: $(BUILD_DIR)/$(TARGET).bin
+bin: $(TARGET).bin
 
 #@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 debug: all
 	@/usr/bin/xfce4-terminal -e \
-		'$(QEMU) $(QEMU_ARGS) -s -S'
+		'$(QEMU) $(QEMU_ARGS) -d in_asm,int,mmu,page -D $(BUILD_DIR)/qemu.log -s -S'
 	#@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 	@$(GDB) $(BUILD_DIR)/$(TARGET) -ex "target remote :1234"
 
