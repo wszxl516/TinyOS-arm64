@@ -1,4 +1,7 @@
 #include "macros.S"
+.arch armv8.2-a+crc
+.cpu cortex-a76
+
 .macro SAVE_EL_REG
     mrs     x9, SP_EL0
     mrs     x10, ELR_EL1
@@ -17,12 +20,12 @@
 
 .macro WITH_CONTEXT_CALL    func
     sub sp, sp, (34 * 8)
-    SAVE_GENERIC_REG    0   29
+    SAVE_GENERIC_REG    0   30
     SAVE_EL_REG
     mov     x0, sp
     bl      \func
     RESTORE_EL_REG
-    RESTORE_GENERIC_REG 0   29
+    RESTORE_GENERIC_REG 0   30
     add sp, sp, 34 * 8
 .endm
 
@@ -32,22 +35,22 @@ trap_vector:
 // ------------------------------------------------------------
 // Current EL with SP0
 // ------------------------------------------------------------
-.align 11
+.align 12
 sync_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.align 11
+.align 12
 irq_current_el_sp0:
     WITH_CONTEXT_CALL handle_irq
     eret
 
-.align 11
+.align 12
 fiq_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.align 11
+.align 12
 serror_current_el_sp0:
     WITH_CONTEXT_CALL dump_error
     eret
@@ -56,22 +59,22 @@ serror_current_el_sp0:
 // Current EL with SPx
 // ------------------------------------------------------------
 
-.align 11
+.align 12
 sync_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.align 11
+.align 12
 irq_current_el_spx:
     WITH_CONTEXT_CALL handle_irq
     eret
 
-.align 11
+.align 12
 fiq_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.align 11
+.align 12
 serror_current_el_spx:
     WITH_CONTEXT_CALL dump_error
     eret
@@ -80,22 +83,22 @@ serror_current_el_spx:
 // Lower EL using AArch64
 // ------------------------------------------------------------
 
-.align 11
+.align 12
 sync_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret                  
 
-.align 11
+.align 12
 irq_lower_el_aarch64:
     WITH_CONTEXT_CALL handle_irq
     eret
 
-.align 11
+.align 12
 fiq_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret
 
-.align 11
+.align 12
 serror_lower_el_aarch64:
     WITH_CONTEXT_CALL dump_error
     eret

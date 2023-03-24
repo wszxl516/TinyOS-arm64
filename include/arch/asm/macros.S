@@ -9,7 +9,7 @@
 
 .macro SAVE_GENERIC_REG start end
     .set n, start
-    .rept end - start
+    .rept (end - start + 1)
             SAVE_XN %n
             .set n, n + 1
     .endr
@@ -17,7 +17,7 @@
 
 .macro RESTORE_GENERIC_REG start end
     .set n, start
-    .rept end - start
+    .rept (end - start + 1)
             LOAD_XN %n
             .set n, n + 1
     .endr

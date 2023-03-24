@@ -1,3 +1,6 @@
+.arch armv8.2-a+crc
+.cpu cortex-a76
+.align 12
 .section .init
 .global _entry
 _entry:
@@ -15,6 +18,7 @@ primary:
     mov     x8, #(0x3 << 20)
     msr     cpacr_el1, x8
     /*disable exception interrupt*/
+    msr     daif, xzr
     msr     mdscr_el1, xzr
     isb
     adrp    x8, stack_top
