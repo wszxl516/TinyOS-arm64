@@ -12,7 +12,6 @@ override OUT_DIR:=$(BUILD_DIR)/obj
 override OUT_ARCH_DIR:=$(OUT_DIR)/arch
 
 # build tools
-# override CC := clang --target=aarch64-none-unknown-elf --sysroot=/usr/aarch64-none-elf/
 override CC := aarch64-none-elf-gcc
 override GDB := aarch64-linux-gnu-gdb
 override OBJCOPY := aarch64-none-elf-objcopy
@@ -20,8 +19,31 @@ override QEMU = qemu-system-aarch64
 override AS := $(CC)
 
 # build args
-override CFLAGS  = -g -Wall -Wextra -MMD -fno-builtin -nostdinc -march=armv8.2-a -mcpu=cortex-a76 -Wa,-mcpu=cortex-a76 -ffreestanding
-override LDFLAGS = -T linker.ld -nostdlib -g -Wl,--Map=$(BUILD_DIR)/kernel.map -nostartfiles -Wl,--no-warn-rwx-segment -Wa,-mcpu=cortex-a76
+override define CFLAGS
+	-g -Wall \
+	-Wextra \
+	-MMD \
+	-fno-builtin \
+	-nostdinc \
+	-march=armv8.2-a \
+	-mcpu=cortex-a76 \
+	-Wa,-mcpu=cortex-a76 \
+	-ffreestanding
+endef
+
+override define LDFLAGS
+	-T linker.ld \
+	-nostdlib \
+	-Wl,--Map=$(BUILD_DIR)/kernel.map \
+	-nostartfiles \
+	-Wl,--no-warn-rwx-segment \
+	-Wa,-mcpu=cortex-a76 \
+	-Wl,--no-omagic \
+	-Wl,--discard-none \
+	-Wl,--check-sections \
+	-Wl,--no-demangle \
+	-Wl,--sort-section=name
+endef
 override EX_CFLAGS :=
 
 # build file
@@ -39,6 +61,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -type d)))
 # -device virtio-blk-device,scsi=off,drive=hd0
 # -drive if=none,file=hd.img,format=raw,id=hd0
 # -kernel $(BUILD_DIR)/$(TARGET).bin
+# -chardev tty,id=ttys0 
 define QEMU_ARGS
 		-smp 2 \
 		-cpu cortex-a76 \
@@ -47,8 +70,7 @@ define QEMU_ARGS
 		-serial chardev:ttys0 \
 		-monitor tcp::1122,server,nowait \
 		-nographic \
-		-device loader,file=$(BUILD_DIR)/$(TARGET),addr=0x040100000 \
-		-device loader,addr=0x040100000,cpu-num=0
+		-device loader,cpu-num=0,file=$(BUILD_DIR)/$(TARGET).bin,addr=0x040100000
 endef
 
 # Depencies
@@ -74,7 +96,7 @@ $(OUT_ARCH_DIR)/%_s.o: $(ARCH_DIR)/%.S $(HEADERS) $(ASM_HEADERS)
 	@mkdir -p $(dir $@)
 	@$(AS) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
 
-$(TARGET): pre_check $(OBJS) 
+$(TARGET): $(OBJS) 
 	@echo [LINK] $@
 	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(OBJS) $(CFLAGS) $(LDFLAGS) $(EX_CFLAGS)
 
@@ -94,13 +116,10 @@ bin: $(TARGET).bin
 debug: all
 	@/usr/bin/xfce4-terminal -e \
 		'$(QEMU) $(QEMU_ARGS) -d in_asm,int,mmu,page -D $(BUILD_DIR)/qemu.log -s -S'
-	#@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 	@$(GDB) $(BUILD_DIR)/$(TARGET) -ex "target remote :1234"
 
-run: $(BUILD_DIR)/$(TARGET).bin
+run: $(TARGET).bin
 	@$(QEMU) $(QEMU_ARGS)
-
-test: test_pre run
 
 dump_dtb:
 	@$(QEMU) $(QEMU_ARGS) -machine dumpdtb=$(BUILD_DIR)/aarch64-virt.dtb > /dev/null 2>&1
@@ -111,6 +130,4 @@ dump_dtb:
 clean:
 	@rm $(BUILD_DIR)/ -rf
 
-test_pre: clean
-	$(eval EX_CFLAGS= -D__RUN_TEST__)
 
