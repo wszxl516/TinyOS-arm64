@@ -1,7 +1,8 @@
 #include "mmu.h"
 #include "arm64.h"
 #include "config.h"
-#include "printf.h"
+#include "ptable.h"
+#include "stdtypes.h"
 
 static usize SECTION(".pagetable") pg_tbl0[512] = {0};
 static usize SECTION(".pagetable") pg_tbl1[512] = {0};
@@ -15,8 +16,16 @@ static void early_map(usize phy_addr, usize flags){
     usize *pg1 = GET_PAGE_ADDR((usize)(&pg_tbl0[p0]));
     usize *pg2 = (usize*)CLEAR_FLAG(*(pg1 + p1));
     *(pg2 + p2) = phy_addr | flags;
-    pr_info("#####################################\n");
-    pr_notice("map: %010lp to %010lp\n", phy_addr, (phy_addr | KERNEL_VA_START));
+}
+
+static void early_map_parts(usize start, usize size, usize flags)
+{   
+    pr_table("MMU Map Type:%s", 50, MEM_TYPE(flags));
+    pr_table("[%0p - %0p]", 50, start, start + size);
+    pr_table("[%0p - %0p]", 50, PHY_2_VIR(start), PHY_2_VIR(start + size));
+    pr_table_end(50);
+    for (u32 i = 0; i < size / MMU_L2_SIZE; i++)
+        early_map(start + MMU_L2_SIZE * i, flags);
 }
 
 static void init_mmu(){
@@ -39,17 +48,16 @@ static void enable_mmu(void *ttbr0, void *ttbr1){
 }
 
 void setup_mmu(){
-    pr_info("#####################################\n");
-    pr_notice("Setup mmu!\n");
+    pr_table("%s", 50, "Setup MMU!");
+    pr_table_end(50);
     init_mmu();
     //map 0x40000000 size 2MB
     //The linear mapping and the start of memory are both 2M aligned
-    early_map(MEM_BASE, MMU_FLAGS);
+    early_map_parts(MEM_BASE, MEM_SIZE, MMU_NORMAL_FLAGS);
     //map 0x09000000 for uart
-    early_map(UART_REGISTER_ADDR, MMU_DEVICE_FLAGS);
-    early_map(GIC_BASE_ADDR, MMU_DEVICE_FLAGS);
+    early_map_parts(UART_REGISTER_ADDR,MMU_L2_SIZE, MMU_DEVICE_FLAGS);
+    early_map_parts(GIC_BASE_ADDR, MMU_L2_SIZE, MMU_DEVICE_FLAGS);
     /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
     enable_mmu(pg_tbl0, pg_tbl0);
-    pr_info("#####################################\n");
     return;
 }

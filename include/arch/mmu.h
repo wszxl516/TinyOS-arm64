@@ -36,6 +36,8 @@
 #define PAGE_SIZE                               (1 << PAGE_SHIFT)
 #define MM_TYPE_PAGE_TABLE                      0x3
 #define MEM_BASE                                (0x40000000ULL)                    // DRAM BASE
+#define MEM_SIZE                                (0x8000000ULL)
+#define MMU_L2_SIZE                             (0x200000ULL)
 #define MM_ACCESS                               (0x1 << 10)
 #define MM_TYPE_BLOCK                           0x1ULL
 #define MT_DEVICE_nGnRnE                        0x0ULL
@@ -43,7 +45,6 @@
 #define MT_DEVICE_nGnRnE_FLAGS                  0x00ULL
 #define MT_NORMAL_NC_FLAGS                      0x44ULL
 #define TABLE_SHIFT                             (9)
-#define MMU_FLAGS                               (MM_ACCESS | (MT_NORMAL_NC << 2) | MM_TYPE_BLOCK)  
 //The linear mapping and the start of memory are both 2M aligned
 #define SECTION_SHIFT                           (PAGE_SHIFT + TABLE_SHIFT)
 #define SECTION_SIZE                            (1 << SECTION_SHIFT)   
@@ -51,9 +52,9 @@
 
 #define MAIR_VALUE                              (MT_DEVICE_nGnRnE_FLAGS << (8 * MT_DEVICE_nGnRnE)) | (MT_NORMAL_NC_FLAGS << (8 * MT_NORMAL_NC))
 
-#define MMU_FLAGS                               (MM_ACCESS | (MT_NORMAL_NC << 2) | MM_TYPE_BLOCK)   
+#define MMU_NORMAL_FLAGS                        (MM_ACCESS | (MT_NORMAL_NC << 2)     | MM_TYPE_BLOCK)   
 #define MMU_DEVICE_FLAGS                        (MM_ACCESS | (MT_DEVICE_nGnRnE << 2) | MM_TYPE_BLOCK)   
-
+#define MEM_TYPE(flags)                         ((0b100 & flags) ? "NORMAL": "DEVICE")
 #define PG_NUM_TO_VIRT(l0, l1 ,l2, l3)          ((l0 << PGD_SHIFT) | (l1 << PUD_SHIFT) | (l2 << PMD_SHIFT) | (l3 << PTE_SHIFT) | KERNEL_VA_START)
 #define PHY_2_VIR(addr)                         ((addr) | (KERNEL_VA_START))
 #define PAGE_MASK                               ((1<<9) -1)

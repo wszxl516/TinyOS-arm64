@@ -65,6 +65,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -type d)))
 define QEMU_ARGS
 		-smp 2 \
 		-cpu cortex-a76 \
+		-m 128 \
 		-machine virt,gic-version=2 \
 		-chardev stdio,id=ttys0 \
 		-serial chardev:ttys0 \
