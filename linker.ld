@@ -34,6 +34,12 @@ SECTIONS {
 		. = ALIGN(0x1000);
 		PROVIDE(page_table_start = .);
 	}
+	.frame : ALIGN(4k) {
+		. = ALIGN(0x1000);
+		PROVIDE(frame_start = .);
+		. += 0x1000 * 1024;
+		PROVIDE(frame_end = .);
+	}
 	.stack : ALIGN(4k) {
 		. += 0x1000;
 		PROVIDE(stack_bottom = .);
@@ -41,6 +47,6 @@ SECTIONS {
 		PROVIDE(stack_top = .);
 		. += 0x1000;
 	}
-	
+
 	PROVIDE(heap_start = .);
 }

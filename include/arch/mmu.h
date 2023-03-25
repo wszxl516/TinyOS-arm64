@@ -1,13 +1,7 @@
 #ifndef __MMU_H__
 #define __MMU_H__
 #include "common.h"
-#define KERNELE_SPACE_START     0XFFFF000000000000ULL
-#define KERNELE_SPACE_END       0XFFFFFFFFFFFFFFFFULL
-
-#define USER_SPACE_START        0X0000000000000000ULL
-#define USER_SPACE_END          0X0000FFFFFFFFFFFFULL
-
-
+#include "address.h"
 
 //https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/MAIR-EL1--Memory-Attribute-Indirection-Register--EL1-
 #define TCR_EPD1                                (0 << 23)          //Perform translation table walks using TTBR1_EL1.
@@ -27,14 +21,8 @@
 #define SCTLR_MMU_ENABLED                       (1 << 0)
 
 #define SCTLR_VALUE_MMU_DISABLED                (SCTLR_RESERVED | SCTLR_EE_LITTLE_ENDIAN | SCTLR_I_CACHE_DISABLED | SCTLR_D_CACHE_DISABLED | SCTLR_MMU_DISABLED)
-#define KERNEL_VA_START                         (KERNELE_SPACE_START)
-#define PGD_SHIFT                               (39)
-#define PUD_SHIFT                               (30)
-#define PMD_SHIFT                               (21)
-#define PTE_SHIFT                               (12)
-#define PAGE_SHIFT                              (12)
-#define PAGE_SIZE                               (1 << PAGE_SHIFT)
-#define MM_TYPE_PAGE_TABLE                      0x3
+
+#define MM_TYPE_PAGE_TABLE                      (0x3)
 #define MEM_BASE                                (0x40000000ULL)                    // DRAM BASE
 #define MEM_SIZE                                (0x8000000ULL)
 #define MMU_L2_SIZE                             (0x200000ULL)
@@ -55,15 +43,7 @@
 #define MMU_NORMAL_FLAGS                        (MM_ACCESS | (MT_NORMAL_NC << 2)     | MM_TYPE_BLOCK)   
 #define MMU_DEVICE_FLAGS                        (MM_ACCESS | (MT_DEVICE_nGnRnE << 2) | MM_TYPE_BLOCK)   
 #define MEM_TYPE(flags)                         ((0b100 & flags) ? "NORMAL": "DEVICE")
-#define PG_NUM_TO_VIRT(l0, l1 ,l2, l3)          ((l0 << PGD_SHIFT) | (l1 << PUD_SHIFT) | (l2 << PMD_SHIFT) | (l3 << PTE_SHIFT) | KERNEL_VA_START)
-#define PHY_2_VIR(addr)                         ((addr) | (KERNEL_VA_START))
-#define PAGE_MASK                               ((1<<9) -1)
-#define PA_2_L0(pa)                             ((pa >> PGD_SHIFT ) & PAGE_MASK)
-#define PA_2_L1(pa)                             ((pa >> PUD_SHIFT ) & PAGE_MASK)
-#define PA_2_L2(pa)                             ((pa >> PMD_SHIFT ) & PAGE_MASK)
-#define PA_2_L3(pa)                             ((pa >> PTE_SHIFT ) & PAGE_MASK)
-#define CLEAR_FLAG(addr)                        ((addr >> PTE_SHIFT) <<PTE_SHIFT)
-#define GET_PAGE_ADDR(addr)                     ((usize*)(CLEAR_FLAG(*((usize*)CLEAR_FLAG(addr)))))
+
 //Instruction Synchronization Barrier
 #define ISB_ALL()   ({__asm__ volatile("ISB SY");})
 //The Translation Lookaside Buffer

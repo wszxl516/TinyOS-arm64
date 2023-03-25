@@ -1,6 +1,7 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 #include "stdtypes.h"
+
 #define NO_OPTIMIZATION_ALIGN    __attribute__ ((packed))
 #define OPTIMIZATION_ALIGN(n)    __attribute__ ((aligned(n)))
 #define SECTION(n)               __attribute__ ((section(n)))
@@ -8,6 +9,7 @@
 #define __UNUSED__               __attribute__((unused))
 #define FUNC_NORETURN            __attribute__((__noreturn__))
 #define ALWAYS_INLINE            __attribute__((always_inline)) inline
+#define ALWAYS_NOINLINE          __attribute__ ((noinline))
 
 #define REG volatile
 #define REG_WRITE(addr, type, value)      ((*(REG type*)(addr)) = value)

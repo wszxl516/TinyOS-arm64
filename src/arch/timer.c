@@ -8,7 +8,6 @@ static u32 ticks;
 
 void timer_handler(void)
 {
-	pr_debug(".");
 	// Disable the timer
 	DISABLE_TIMER();
 	gicd_clear_pending(TIMER_IRQ);

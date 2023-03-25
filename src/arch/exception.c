@@ -31,7 +31,6 @@ void handle_irq(trap_frame *frame __UNUSED__){
     disable_irq();
     i32 irq;
     if( gic_fetch_irq(&irq) == IRQ_NOT_FOUND ){
-        pr_info("IRQ not found!\n");
         dump_error(frame);
     }
 
