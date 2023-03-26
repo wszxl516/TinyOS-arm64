@@ -339,6 +339,7 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
             case 'P':
               /* fall through */
             case 'p':
+              p.width = 18;
               p.alt = 1;
               lng = 2;
               /* fall through */
@@ -348,7 +349,6 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
               p.uc = (ch == 'X') ? 1 : 0;
               p.align_left = 0;
               p.alt = 1;
-              p.width = 18;
               if (2 == lng)
                 ulli2a (va_arg (va, unsigned long long int), &p);
               else if (1 == lng)

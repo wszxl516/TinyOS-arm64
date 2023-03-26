@@ -41,10 +41,10 @@ void feature_dump(){
 			continue;
 		pr_info("Processor%u \n", features[i].id_num);
 		pr_info("\tImpl\t: %s \n", CPU_IMPLEMENTER[features[i].impl]);
-		pr_info("\tArch\t: 0x%02x \n", features[i].arch);
+		pr_info("\tArch\t: %02x \n", features[i].arch);
 		pr_info("\tPart\t: %s \n", CPU_PART[features[i].partid]);
-		pr_info("\tVariant\t: 0x%02x \n", features[i].variant);
-		pr_info("\tRev\t: 0x%02x\n", features[i].revision);
+		pr_info("\tVariant\t: %02x \n", features[i].variant);
+		pr_info("\tRev\t: %02x\n", features[i].revision);
 		pr_info("\tFeatures: ");
 		pr_info("%s", FEATURE_CSV3(features[i].attr[0]) ? "CSV3 " : "", features[i].attr[0]);
 		pr_info("%s", FEATURE_CSV2(features[i].attr[0]) ? "CSV2 " : "");
