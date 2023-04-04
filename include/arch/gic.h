@@ -146,4 +146,6 @@ int gic_fetch_irq(int *irqp);
 void gicd_disable_int(int irq);
 void gicd_enable_int(int irq);
 void gicd_clear_pending(int irq);
+void enable_irq(void);
+void disable_irq(void);
 #endif  //__GIC_H__

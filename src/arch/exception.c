@@ -4,13 +4,21 @@
 #include "exception.h"
 #include "timer.h"
 #include "gic.h"
+#include "symbol.h"
 
 void dump_trap_fram(trap_frame *frame){
+    char name[64] = {0};
+    usize offset = 0;
     for (u32 i = 0; i < 31; i++)
-        pr_err("X%02u 0x%016x\t", i,frame->regs[i]);
+        pr_err("x%02u %0p\t", i,frame->regs[i]);
     pr_err("\n");
-    pr_err("ELR_EL1: 0x%012x\t", frame->elr);
-    pr_err("SPSR_EL1: 0x%012x", frame->spsr);
+    pr_err("ELR_EL1: %0p\t", frame->elr);
+    pr_err("SPSR_EL1: %0p\n", frame->spsr);
+    lookup_name_and_offset(frame->regs[30], name, &offset);
+    pr_err("#(%0p):%s+0x%x\n", frame->regs[30], name, offset);
+    lookup_name_and_offset(frame->elr, name, &offset);
+    pr_err("\t#(%0p):%s+0x%x\n", frame->elr, name, offset);
+
 }
 
 void dump_error(trap_frame *frame){

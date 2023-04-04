@@ -1,0 +1,16 @@
+
+#include "symbol.h"
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define SYMBOL(_addr, _size, _type, _symbol_name) char SECTION("symbol_table_str") __USED__ __symbol__##_symbol_name[] = TOSTRING(_symbol_name);
+#include "__symbols__.h"
+#undef SYMBOL
+
+
+#define SYMBOL(_addr, _size, _type, _symbol_name) {.addr = _addr, .size = _size, .type = _type, .symbol_name =  __symbol__##_symbol_name },
+symbols_entry_t symbols_entrys[] SECTION("symbol_table") __USED__ = 
+{
+    #include "__symbols__.h"
+};
+#undef SYMBOL

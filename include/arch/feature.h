@@ -2,7 +2,6 @@
 #ifndef __FEATURE_H__
 #define __FEATURE_H__
 #include "stdtypes.h"
-#include "cputypes.h"
 
 #define CPUID() REG_READ_P(MPIDR_EL1);
 

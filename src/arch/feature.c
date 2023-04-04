@@ -1,3 +1,4 @@
+#include "cputypes.h"
 #include "feature.h"
 #include "arm64.h"
 #include "common.h"

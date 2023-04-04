@@ -1,4 +1,5 @@
 #include "printf.h"
+#include "stdtypes.h"
 #include "uart.h"
 #include <string.h>
 #ifdef __GNUC__
@@ -15,18 +16,19 @@ struct param
   char lz : 1;         /**<  Leading zeros */
   char alt : 1;        /**<  alternate form */
   char uc : 1;         /**<  Upper case (for base16 only) */
+  char prefix: 1;
   char align_left : 1; /**<  0 == align right (default), 1 == align left */
-  unsigned int width;  /**<  field width */
+  u32 width;  /**<  field width */
   char sign;           /**<  The sign to display (if any) */
-  unsigned int base;   /**<  number base (e.g.: 8, 10, 16) */
+  u32 base;   /**<  number base (e.g.: 8, 10, 16) */
   char *bf;            /**<  Buffer to output */
 };
 
 static void _k_GCC_NO_INLINE_
-ulli2a (unsigned long long int num, struct param *p)
+ulli2a (u64 num, struct param *p)
 {
   int n = 0;
-  unsigned long long int d = 1;
+  u64 d = 1;
   char *bf = p->bf;
   while (num / d >= p->base)
     d *= p->base;
@@ -45,7 +47,7 @@ ulli2a (unsigned long long int num, struct param *p)
 }
 
 static void
-lli2a (long long int num, struct param *p)
+lli2a (i64 num, struct param *p)
 {
   if (num < 0)
     {
@@ -56,10 +58,10 @@ lli2a (long long int num, struct param *p)
 }
 
 static void
-uli2a (unsigned long int num, struct param *p)
+uli2a (usize num, struct param *p)
 {
   int n = 0;
-  unsigned long int d = 1;
+  usize d = 1;
   char *bf = p->bf;
   while (num / d >= p->base)
     d *= p->base;
@@ -78,7 +80,7 @@ uli2a (unsigned long int num, struct param *p)
 }
 
 static void
-li2a (long num, struct param *p)
+li2a (isize num, struct param *p)
 {
   if (num < 0)
     {
@@ -89,10 +91,10 @@ li2a (long num, struct param *p)
 }
 
 static void
-ui2a (unsigned int num, struct param *p)
+ui2a (u32 num, struct param *p)
 {
   int n = 0;
-  unsigned int d = 1;
+  u32 d = 1;
   char *bf = p->bf;
   while (num / d >= p->base)
     d *= p->base;
@@ -135,10 +137,10 @@ a2d (char ch)
 }
 
 static char
-a2u (char ch, const char **src, int base, unsigned int *nump)
+a2u (char ch, const char **src, int base, u32 *nump)
 {
   const char *p = *src;
-  unsigned int num = 0;
+  u32 num = 0;
   int digit;
   while ((digit = a2d (ch)) >= 0)
     {
@@ -181,7 +183,7 @@ putchw (void *putp, putcf putf, struct param *p)
     putf (putp, p->sign);
 
   /* Alternate */
-  if (p->alt && p->base == 16)
+  if (p->alt && p->base == 16 && p->prefix)
     {
       putf (putp, '0');
       putf (putp, (p->uc ? 'X' : 'x'));
@@ -280,14 +282,14 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
           if (ch == 'z')
             {
               ch = *(fmt++);
-              if (sizeof (usize) == sizeof (unsigned long int))
+              if (sizeof (usize) == sizeof (u32))
                 lng = 1;
-              else if (sizeof (usize) == sizeof (unsigned long long int))
+              else if (sizeof (usize) == sizeof (u64))
                 lng = 2;
             }
           else
 
-              if (ch == 'l')
+            if (ch == 'l')
             {
               ch = *(fmt++);
               lng = 1;
@@ -305,11 +307,11 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
               p.base = 10;
 
               if (2 == lng)
-                ulli2a (va_arg (va, unsigned long long int), &p);
+                ulli2a (va_arg (va, u64), &p);
               else if (1 == lng)
-                uli2a (va_arg (va, unsigned long int), &p);
+                uli2a (va_arg (va,  usize), &p);
               else
-                ui2a (va_arg (va, unsigned int), &p);
+                ui2a (va_arg (va, u32), &p);
               putchw (putp, putf, &p);
               break;
             case 'f':
@@ -329,11 +331,11 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
             case 'i':
               p.base = 10;
               if (2 == lng)
-                lli2a (va_arg (va, long long int), &p);
+                lli2a (va_arg (va, i64), &p);
               else if (1 == lng)
-                li2a (va_arg (va, long int), &p);
+                li2a (va_arg (va, isize), &p);
               else
-                i2a (va_arg (va, int), &p);
+                i2a (va_arg (va, i32), &p);
               putchw (putp, putf, &p);
               break;
             case 'P':
@@ -347,23 +349,24 @@ k_format (void *putp, putcf putf, const char *fmt, va_list va)
             case 'X':
               p.base = 16;
               p.uc = (ch == 'X') ? 1 : 0;
+              p.prefix = (ch == 'p' || ch == 'P') ? 1 : 0;
               p.align_left = 0;
               p.alt = 1;
               if (2 == lng)
-                ulli2a (va_arg (va, unsigned long long int), &p);
+                ulli2a (va_arg (va, u64), &p);
               else if (1 == lng)
-                uli2a (va_arg (va, unsigned long int), &p);
+                uli2a (va_arg (va, usize), &p);
               else
-                ui2a (va_arg (va, unsigned int), &p);
+                ui2a (va_arg (va, u32), &p);
               putchw (putp, putf, &p);
               break;
             case 'o':
               p.base = 8;
-              ui2a (va_arg (va, unsigned int), &p);
+              ui2a (va_arg (va, u32), &p);
               putchw (putp, putf, &p);
               break;
             case 'c':
-              putf (putp, (char)(va_arg (va, int)));
+              putf (putp, (char)(va_arg (va, i32)));
               break;
             case 's':
               p.bf = va_arg (va, char *);

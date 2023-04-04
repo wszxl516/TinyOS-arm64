@@ -20,6 +20,7 @@
 
 
 #define PHY_2_VIR(addr)                         ((addr) | (KERNEL_VA_START))
+#define VIR_2_PHY(addr)                         ((addr) & (~KERNEL_VA_START))
 #define PA_2_L0(pa)                             ((pa >> PGD_SHIFT ) & PAGE_MASK)
 #define PA_2_L1(pa)                             ((pa >> PUD_SHIFT ) & PAGE_MASK)
 #define PA_2_L2(pa)                             ((pa >> PMD_SHIFT ) & PAGE_MASK)

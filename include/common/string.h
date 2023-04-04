@@ -12,7 +12,7 @@ void *memchr (const void *, int, usize);
 
 usize strlen(const char *s);
 
-char *stpncpy(char *restrict d, const char *restrict s, usize n);
+char *strncpy(char *restrict d, const char *restrict s, usize n);
 
 char *strncat(char *restrict d, const char *restrict s, usize n);
 

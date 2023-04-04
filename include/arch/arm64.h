@@ -32,13 +32,4 @@
 
 #define CURRENT_EL()	GET_BITS(REG_READ_P(CurrentEL), 2, 3)
 
-
-static inline void disable_irq(void)
-{
-	__asm__ __volatile__("msr DAIFSet, %0\n\t" : : "i" (1 << 1)  : "memory");
-}
-static inline void enable_irq(void)
-{
-	__asm__ __volatile__("msr DAIFClr, %0\n\t" : : "i" (1 << 1)  : "memory");
-}
 #endif //__CPU_H__

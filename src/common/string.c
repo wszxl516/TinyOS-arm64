@@ -8,7 +8,7 @@ usize strlen(const char *s)
 	return s-a;
 }
 
-char *stpncpy(char *restrict d, const char *restrict s, usize n)
+char *strncpy(char *restrict d, const char *restrict s, usize n)
 {
 	for (; n && (*d=*s); n--, s++, d++);
 	memset(d, 0, n);

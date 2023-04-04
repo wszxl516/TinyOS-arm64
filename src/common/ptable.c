@@ -6,7 +6,7 @@ pr_table_title (u32 width)
   width = width % 2 ? width + 1 : width;
   char title[128] = { 0 };
   for (u32 i = 0; i < width; i++)
-    title[i] = '#';
+    title[i] = '-';
   return pr_debug ("%s\n", title);
 }
 
@@ -47,11 +47,11 @@ pr_table (const char *fmt, u32 width, ...)
   char l_blank[64] = { 0 };
   char r_blank[64] = { 0 };
   for (u32 i = 0; i < width; i++)
-    title[i] = '#';
+    title[i] = '-';
   for (u32 i = 0; i < l_align_width - 1; i++)
     l_blank[i] = ' ';
   for (u32 i = 0; i < r_align_width - 1; i++)
     r_blank[i] = ' ';
-  retval = pr_debug ("%s\n#%s%s%s#\n", title, l_blank, buffer, r_blank);
+  retval = pr_debug ("%s\n|%s%s%s|\n", title, l_blank, buffer, r_blank);
   return retval;
 }

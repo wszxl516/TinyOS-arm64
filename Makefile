@@ -1,6 +1,6 @@
 # Makefile
 
-TARGET=kernel.elf
+TARGET=kernel
 
 # dir
 override PWD=$(shell pwd)
@@ -17,6 +17,7 @@ override GDB := aarch64-linux-gnu-gdb
 override OBJCOPY := aarch64-none-elf-objcopy
 override QEMU = qemu-system-aarch64
 override AS := $(CC)
+override NM := aarch64-none-elf-nm
 
 # build args
 override define CFLAGS
@@ -74,6 +75,12 @@ define QEMU_ARGS
 		-device loader,cpu-num=0,file=$(BUILD_DIR)/$(TARGET).bin,addr=0x040100000
 endef
 
+define generate_symbols
+    $(NM) --defined-only --print-size --print-armap --size-sort --radix=x $1 | sort -s | \
+	sed "/\.L\.str/d" | \
+	awk -F " " '{ print "SYMBOL(" "0x" $$1 ", 0x0" $$2 ", \x27" $$3  "\x27, "  $$4  ")" }' > $2
+endef
+
 # Depencies
 -include $(OBJS:%.o=%.d)
 
@@ -97,9 +104,18 @@ $(OUT_ARCH_DIR)/%_s.o: $(ARCH_DIR)/%.S $(HEADERS) $(ASM_HEADERS)
 	@mkdir -p $(dir $@)
 	@$(AS) -c -o $@ $< $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS)
 
-$(TARGET): $(OBJS) 
+$(BUILD_DIR)/$(TARGET).o: $(OBJS) 
 	@echo [LINK] $@
-	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(OBJS) $(CFLAGS) $(LDFLAGS) $(EX_CFLAGS)
+	@$(CC) -nostdlib -Wl,-no-pie -Wl,-relocatable -o $(BUILD_DIR)/$(TARGET).o $(OBJS) $(CFLAGS)
+
+$(BUILD_DIR)/__symbols__.o: $(BUILD_DIR)/$(TARGET).o
+	@echo [SYMBOL] $@
+	@$(call generate_symbols, $(BUILD_DIR)/$(TARGET).o, $(BUILD_DIR)/__symbols__.h)
+	@$(CC) -x c  $(SRC_DIR)/mm/__symbols__ -c -o $(BUILD_DIR)/__symbols__.o $(CFLAGS) $(EX_CFLAGS) $(INC_DIRS) -I $(BUILD_DIR)
+
+$(TARGET): $(BUILD_DIR)/__symbols__.o $(BUILD_DIR)/$(TARGET).o
+	@echo [LINK] $@
+	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET).o $(BUILD_DIR)/__symbols__.o $(CFLAGS) $(LDFLAGS) $(EX_CFLAGS)
 
 $(TARGET).bin: pre_check $(TARGET)
 	@echo [BIN] $@
