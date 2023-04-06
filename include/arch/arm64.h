@@ -2,7 +2,7 @@
 #ifndef __CPU_H__
 #define __CPU_H__
 #include "stdtypes.h"
-
+#include "config.h"
 //read generic register
 #define REG_READ_G(name)  ({ \
 	usize value = 0; \
@@ -31,5 +31,14 @@
 #define REG_UPDATE_G(name, value) REG_WRITE_G(name, (REG_READ_G(name) | value))
 
 #define CURRENT_EL()	GET_BITS(REG_READ_P(CurrentEL), 2, 3)
+
+
+#define SWITCH_TO_USER(func)	do	\
+{	\
+    REG_WRITE_P(spsr_el1, 0ULL);	\
+	REG_WRITE_P(sp_el0, (usize)user_stack_top); \
+    REG_WRITE_P(elr_el1, (usize)func);	\
+    __asm__ volatile("eret");	\
+}while(0)
 
 #endif //__CPU_H__

@@ -63,6 +63,7 @@ override INC_DIRS = $(addprefix -I, $(sort $(shell find $(INC_DIR) -type d)))
 # -drive if=none,file=hd.img,format=raw,id=hd0
 # -kernel $(BUILD_DIR)/$(TARGET).bin
 # -chardev tty,id=ttys0 
+# -nographic
 define QEMU_ARGS
 		-smp 2 \
 		-cpu cortex-a76 \
@@ -71,8 +72,19 @@ define QEMU_ARGS
 		-chardev stdio,id=ttys0 \
 		-serial chardev:ttys0 \
 		-monitor tcp::1122,server,nowait \
-		-nographic \
-		-device loader,cpu-num=0,file=$(BUILD_DIR)/$(TARGET).bin,addr=0x040100000
+		-nographic
+endef
+
+define QEMU_RUN_ARGS
+	$(QEMU_ARGS) \
+	-device loader,cpu-num=0,file=$(BUILD_DIR)/$(TARGET).bin,addr=0x040100000
+endef
+
+define QEMU_DEBUG_ARGS
+	$(QEMU_RUN_ARGS) \
+	-d in_asm,int,mmu,page \
+	-D $(BUILD_DIR)/qemu.log \
+	-s -S
 endef
 
 define generate_symbols
@@ -132,11 +144,11 @@ bin: $(TARGET).bin
 #@lldb -O "target create $(BUILD_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 debug: all
 	@/usr/bin/xfce4-terminal -e \
-		'$(QEMU) $(QEMU_ARGS) -d in_asm,int,mmu,page -D $(BUILD_DIR)/qemu.log -s -S'
+		'$(QEMU) $(QEMU_DEBUG_ARGS)'
 	@$(GDB) $(BUILD_DIR)/$(TARGET) -ex "target remote :1234"
 
 run: $(TARGET).bin
-	@$(QEMU) $(QEMU_ARGS)
+	@$(QEMU) $(QEMU_RUN_ARGS)
 
 dump_dtb:
 	@$(QEMU) $(QEMU_ARGS) -machine dumpdtb=$(BUILD_DIR)/aarch64-virt.dtb > /dev/null 2>&1

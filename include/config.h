@@ -17,4 +17,5 @@ extern ld_script_pointer_t heap_start, text_start;
 extern ld_script_pointer_t device_start, device_end;
 extern ld_script_pointer_t trap_vector, page_table_start;
 extern ld_script_pointer_t frame_start, frame_end;
+extern ld_script_pointer_t user_stack_top, user_stack_bottom;
 #endif //__CONFIG_H__

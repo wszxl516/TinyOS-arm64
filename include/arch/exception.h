@@ -3,6 +3,8 @@
 #include "stdtypes.h"
 #include "common.h"
 
+#define EC_SYSCALL  (0b010101)
+
 const char * exception_msg[] =
 {
     [0b000000] = "Unknown reason.",
@@ -17,7 +19,7 @@ const char * exception_msg[] =
     [0b001101] = "Branch Target Exception.",
     [0b001110] = "Illegal Execution state.",
     [0b010001] = "SVC instruction execution in AArch32 state.",
-    [0b010101] = "SVC instruction execution in AArch64 state.",
+    [EC_SYSCALL] = "SVC instruction execution in AArch64 state.",
     [0b011000] = "Trapped MSR, MRS or System instruction execution in AArch64 state.",
     [0b011001] = "Access to SVE functionality trapped.",
     [0b011011] = "Exception from an access to a TSTART instruction.",

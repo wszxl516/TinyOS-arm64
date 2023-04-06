@@ -1,7 +1,7 @@
 ENTRY(_entry);
  
 base_addr = 0x40100000;
- 
+	
 SECTIONS {
     . = base_addr;
 	PROVIDE(text_start = .);
@@ -45,6 +45,14 @@ SECTIONS {
 		PROVIDE(stack_bottom = .);
 		. += 0x1000 * 4;
 		PROVIDE(stack_top = .);
+		. += 0x1000;
+	}
+
+	.user_stack : ALIGN(4k) {
+		. += 0x1000;
+		PROVIDE(user_stack_bottom = .);
+		. += 0x1000 * 4;
+		PROVIDE(user_stack_top = .);
 		. += 0x1000;
 	}
 

@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "gic.h"
 #include "symbol.h"
+#include "syscalls.h"
 
 void dump_trap_fram(trap_frame *frame){
     char name[64] = {0};
@@ -35,11 +36,31 @@ void dump_error(trap_frame *frame){
 }
 
 
+void system_call(trap_frame *frame){
+    syscall_args_t args = {.args = {
+        frame->regs[0],
+        frame->regs[1],
+        frame->regs[2],
+        frame->regs[3],
+        frame->regs[4],
+        frame->regs[5]
+        }, .syscall_nr = frame->regs[8]};
+    frame->regs[0]  = do_syscall(&args);
+}
+
 void handle_irq(trap_frame *frame __UNUSED__){
     disable_irq();
     i32 irq;
     if( gic_fetch_irq(&irq) == IRQ_NOT_FOUND ){
-        dump_error(frame);
+        usize value = REG_READ_P(ESR_EL1);
+        switch (GET_BITS(value, 26, 31)) 
+        {
+            case EC_SYSCALL:
+                system_call(frame);
+                break;
+            default:
+                dump_error(frame);
+        }
     }
 
     switch(irq){
