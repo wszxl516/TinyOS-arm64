@@ -11,10 +11,7 @@ void disable_irq(void)
 
 void enable_irq(void)
 {
-        	        u32 x __USED__ = *((usize *)(1<<64));
-
 	__asm__ __volatile__("msr DAIFClr, %0\n\t" : : "i" (1 << 1)  : "memory");
-
 }
 
 void setup_trap()
