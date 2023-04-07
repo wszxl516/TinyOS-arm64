@@ -59,13 +59,13 @@ symbols_entry_t *find_symbol(symbols_entry_t *symbol_res) {
 }
 
 void lookup_name_and_offset(usize addr, char *symbol_name, usize *offset) {
-  symbols_entry_t entry = {.addr = VIR_2_PHY(addr), .symbol_name = symbol_name, .type = 'T'};
+  symbols_entry_t entry = {
+      .addr = addr, .symbol_name = symbol_name, .type = 'T'};
   memset(symbol_name, 0, 64);
   find_symbol(&entry);
   if (entry.symbol_name[0] == 0) {
     strncpy(symbol_name, UNKNOWN_SYMBOL, sizeof(UNKNOWN_SYMBOL));
     *offset = 0;
-  }
-  else
+  } else
     *offset = VIR_2_PHY(addr) - entry.addr - symbol_addr_offset;
 }

@@ -151,8 +151,8 @@ run: $(TARGET).bin
 	@$(QEMU) $(QEMU_RUN_ARGS)
 
 dump_dtb:
-	@$(QEMU) $(QEMU_ARGS) -machine dumpdtb=$(BUILD_DIR)/aarch64-virt.dtb > /dev/null 2>&1
-	@dtc -O dts -o $(BUILD_DIR)/aarch64-virt.dts  $(BUILD_DIR)/aarch64-virt.dtb > /dev/null 2>&1
+	@$(QEMU) $(QEMU_ARGS) -machine dumpdtb=$(BUILD_DIR)/aarch64-virt.dtb 
+	@dtc -O dts -o $(BUILD_DIR)/aarch64-virt.dts  $(BUILD_DIR)/aarch64-virt.dtb
 	@rm $(BUILD_DIR)/aarch64-virt.dtb -f
 	@echo "$(BUILD_DIR)/aarch64-virt.dts dumped"
 

@@ -1,6 +1,6 @@
 ENTRY(_entry);
  
-base_addr = 0x40100000;
+base_addr = 0xffff000040100000;
 	
 SECTIONS {
     . = base_addr;
@@ -47,14 +47,7 @@ SECTIONS {
 		PROVIDE(stack_top = .);
 		. += 0x1000;
 	}
-
-	.user_stack : ALIGN(4k) {
-		. += 0x1000;
-		PROVIDE(user_stack_bottom = .);
-		. += 0x1000 * 4;
-		PROVIDE(user_stack_top = .);
-		. += 0x1000;
-	}
-
+	symbol_table_str : ALIGN(4k) {}
+	symbol_table : ALIGN(4k) {}
 	PROVIDE(heap_start = .);
 }

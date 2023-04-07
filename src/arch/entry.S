@@ -8,7 +8,7 @@ _entry:
     mrs      x0, MPIDR_EL1
     and      x0, x0, #0xFF
     CBZ      x0, primary                       // If core 0, run the primary init
-    b        others                         // Else, run secondary init
+    b        others                            // Else, run secondary init
 primary:
     ic      iallu
     tlbi    vmalle1is
