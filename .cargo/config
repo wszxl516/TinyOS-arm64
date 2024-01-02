@@ -1,0 +1,16 @@
+[build]
+target = "aarch64-unknown-none"
+
+[target.aarch64-unknown-none]
+rustflags = [
+    "-Clink-arg=-Tsrc/linker.ld",
+    "-Ctarget-feature=+neon",
+    "-Clink-arg=--Map=os.map",
+    "-Ctarget-cpu=cortex-a72",
+    "-Cforce-frame-pointers=yes"
+]
+
+[unstable]
+mtime-on-use = true
+build-std = ["core", "alloc"]
+

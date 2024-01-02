@@ -1,0 +1,7 @@
+/target
+/symbols.log
+/os.map
+/.gdb_history
+/arm64-virt.dts
+/.idea
+/qemu.log

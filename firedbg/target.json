@@ -1,0 +1,11 @@
+{
+  "binaries": [
+    {
+      "name": "aarch64-minimal",
+      "src_path": "/data/works/TinyOS-arm64/src/main.rs"
+    }
+  ],
+  "examples": [],
+  "integration_tests": [],
+  "unit_tests": []
+}
