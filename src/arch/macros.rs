@@ -1,5 +1,5 @@
 //example
-//asm!("mrs {reg:x}, CurrentEL", reg = out(reg) current_el, options(nomem, nostack))};
+//asm!("mrs {reg:x}, CurrentEL", reg = out(reg) current_el)};
 #[macro_export]
 macro_rules! read_raw {
     ($width:ty, $asm_instr:tt, $asm_reg_name:ident, $asm_width:tt) => {

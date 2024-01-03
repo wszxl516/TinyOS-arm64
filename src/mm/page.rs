@@ -1,90 +1,115 @@
-use crate::{align_down, align_up};
-use crate::mm::address::{PAGE_SIZE, PhyAddr, VirtAddr};
 use crate::mm::attr::PTEFlags;
 use crate::mm::entry::PTE;
-use crate::mm::page_alloc;
+use crate::mm::heap::page_alloc;
+use crate::{addr2slice, align_up};
 
+#[allow(dead_code)]
+pub const USER_START: usize = 0x0000_0000_0000_0000;
+#[allow(dead_code)]
+pub const USER_END: usize = 0x0000_FFFF_FFFF_FFFF;
+pub const KERNEL_START: usize = 0xFFFF_0000_0000_0000;
+#[allow(dead_code)]
+pub const KERNEL_END: usize = 0xFFFF_FFFF_FFFF_FFFF;
+pub const PHYS_VIRT_OFFSET: usize = KERNEL_START;
+pub const VA_MAX_BITS: usize = 48;
 pub const PAGE_ENTRY_COUNT: usize = 512;
 
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub struct PageTable {
-    pub entrys: [PTE; PAGE_ENTRY_COUNT],
-}
+use super::{PhyAddr, VirtAddr, PAGE_SIZE};
 
+pub struct PageTable {
+    base_addr: PhyAddr,
+}
 impl PageTable {
-    pub const fn new() -> Self {
-        Self {
-            entrys: [PTE::empty(); PAGE_ENTRY_COUNT],
-        }
+    pub const fn new() -> Self{
+        Self{base_addr: PhyAddr::new(0)}
     }
-    pub fn alloc() -> &'static mut Self {
-        let addr = page_alloc(1);
-        unsafe { &mut *(VirtAddr::new(addr).as_mut_ptr() as *mut Self) }
+    pub fn init(&mut self) {
+        self.base_addr = VirtAddr::new(page_alloc(1)).as_phy()
     }
-    pub fn map_page(&mut self, va: VirtAddr, pa: PhyAddr, flags: PTEFlags, force: bool) {
-        let entry = self.find_entry(va);
-        if unsafe { *entry }.is_valid() && force {
-            unsafe { *entry = PTE::new_entry(pa, flags, false) }
-        } else {
-            unsafe { *entry = PTE::new_entry(pa, flags, false) }
-        }
+    fn alloc_page(&mut self) -> PhyAddr {
+        VirtAddr::new(page_alloc(1)).as_phy()
+    }
+    pub const fn root_phy_addr(&self) -> PhyAddr {
+        self.base_addr
+    }
+    #[inline]
+    fn entrys<'a>(&mut self) -> &'a mut [PTE] {
+        addr2slice!(
+            self.root_phy_addr().into_vaddr().as_mut_ptr(),
+            PAGE_ENTRY_COUNT,
+            PTE
+        )
+    }
+    fn find_entry(&mut self, vaddr: VirtAddr) -> Option<&mut PTE> {
+        let vpn = vaddr.vpn();
+        Some(
+            &mut self.entrys()[vpn.3].get_page(|| self.alloc_page())?[vpn.2]
+                .get_page(|| self.alloc_page())?[vpn.1]
+                .get_page(|| self.alloc_page())?[vpn.0],
+        )
     }
     #[allow(dead_code)]
-    pub fn unmap_page(&mut self, va: VirtAddr) {
-        let va_start = VirtAddr::new(align_down!(va.as_usize(), PAGE_SIZE));
-        let entry = self.find_entry(va_start);
-        unsafe { *entry }.clear()
+    pub fn query(&mut self, vaddr: VirtAddr) -> Option<(PhyAddr, PTEFlags)> {
+        let entry = self.find_entry(vaddr)?;
+        if entry.is_unused() {
+            return None;
+        }
+        let off = vaddr.page_offset();
+        Some((
+            PhyAddr::new(entry.phy_addr().as_usize() + off),
+            entry.flags(),
+        ))
     }
-    pub fn map_range(
+    pub fn map(&mut self, vaddr: VirtAddr, phy_addr: PhyAddr, flags: PTEFlags, force: bool) {
+        let entry = self.find_entry(vaddr).unwrap();
+        if !entry.is_unused() && !force {
+            panic!(
+                "{} => {:#x} {:#x} is mapped before mapping",
+                vaddr,
+                phy_addr.as_usize(),
+                entry.0
+            );
+        }
+        *entry = PTE::new_entry(phy_addr.align_down(), flags, false);
+    }
+
+    #[allow(dead_code)]
+    pub fn unmap(&mut self, vaddr: VirtAddr) {
+        let entry = self.find_entry(vaddr).unwrap();
+        if entry.is_unused() {
+            panic!("{} is invalid before unmapping", vaddr);
+        }
+        entry.clear();
+    }
+
+    pub fn map_area(
         &mut self,
-        va: VirtAddr,
-        pa: PhyAddr,
+        vaddr: VirtAddr,
+        phy_addr: PhyAddr,
         size: usize,
         flags: PTEFlags,
         force: bool,
     ) {
-        let mut va_start = VirtAddr::new(align_down!(va.as_usize(), PAGE_SIZE));
-        let mut pa_start = PhyAddr::new(align_down!(pa.as_usize(), PAGE_SIZE));
+        let mut va_start = vaddr.align_down().as_usize();
+        let mut pa_start = phy_addr.align_down().as_usize();
         let size = align_up!(size, PAGE_SIZE);
-        loop {
-            self.map_page(va_start, pa_start, flags, force);
-            va_start = VirtAddr::new(va_start.as_usize() + PAGE_SIZE);
-            pa_start = PhyAddr::new(pa_start.as_usize() + PAGE_SIZE);
-            if va_start.as_usize() >= va.align_down().as_usize() + size {
-                break;
-            }
-        }
-    }
-    #[allow(dead_code)]
-    pub fn unmap_range(&mut self, va: VirtAddr, size: usize) {
-        let mut va_start = VirtAddr::new(align_down!(va.as_usize(), PAGE_SIZE));
-        let size = align_up!(size, PAGE_SIZE);
-        loop {
-            self.unmap_page(va_start);
-            va_start = VirtAddr::new(va_start.as_usize() + PAGE_SIZE);
-            if va_start.as_usize() >= va.align_down().as_usize() + size {
-                break;
-            }
+        let end = va_start + size;
+        while va_start < end {
+            let start_pa = PhyAddr::new(pa_start);
+            self.map(VirtAddr::new(va_start), start_pa, flags, force);
+            va_start += PAGE_SIZE;
+            pa_start += PAGE_SIZE;
         }
     }
 
-    pub fn addr(&self) -> VirtAddr {
-        VirtAddr::new(self as *const Self as usize)
-    }
-    pub fn find_entry(&mut self, va: VirtAddr) -> *mut PTE {
-        let mut entry;
-        let mut page_table = self;
-        for level in [3, 2, 1] {
-            entry = &mut (page_table.entrys[va.vpn(level)]);
-            if entry.is_valid() {
-                page_table = unsafe { &mut (*entry.as_table()) }
-            } else {
-                page_table = PageTable::alloc();
-                let addr = page_table.addr().as_phy();
-                *entry = PTE::new_page(addr)
-            }
+    #[allow(dead_code)]
+    pub fn unmap_area(&mut self, vaddr: VirtAddr, size: usize) {
+        let mut va_start = vaddr.align_down().as_usize();
+        let size = align_up!(size, PAGE_SIZE);
+        let end = va_start + size;
+        while va_start < end {
+            self.unmap(VirtAddr::new(va_start));
+            va_start += PAGE_SIZE;
         }
-        &mut page_table.entrys[va.vpn(0)]
     }
 }

@@ -1,20 +1,20 @@
-use core::fmt::{Display, Formatter};
-
 use bitflags::bitflags;
-
+use core::fmt::{Display, Formatter};
 bitflags! {
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Copy, Clone)]
     pub struct PTEFlags: usize {
-        const R          = 1 << 0;
-        const W         = 1 << 1;
-        const X             = 1 << 2;
-        const USER          = 1 << 3;
-        const DEVICE        = 1 << 4;
-        const RWX = 1 << 0 | 1 << 1 | 1 << 2;
-        const RW = 1 << 0 | 1 << 1 ;
-        const RX = 1 << 0 | 1 << 2;
+        const R        = 1 << 0;
+        const W        = 1 << 1;
+        const X        = 1 << 2;
+        const U        = 1 << 3;
+        const D        = 1 << 4;
+        const RW       = (1 << 0) | (1 << 1);
+        const RX       = (1 << 0) | (1 << 2);
+        const RWX      = (1 << 0) | (1 << 1) | (1 << 2);
+
     }
 }
+
 impl PTEFlags {
     const FLAG_STR: [char; 5] = ['r', 'w', 'x', 'u', 'd'];
 }
@@ -31,12 +31,9 @@ impl Display for PTEFlags {
         Ok(())
     }
 }
-bitflags! {
-    /// Memory attribute fields in the VMSAv8-64 translation table format descriptors.
-    #[derive(Debug, Copy, Clone)]
-    pub struct DescriptorAttr: usize {
-        // Attribute fields in stage 1 VMSAv8-64 Block and Page descriptors:
 
+bitflags! {
+    pub struct PTEAttr: usize {
         /// Whether the descriptor is valid.
         const VALID =       1 << 0;
         /// The descriptor gives the address of the next level of translation table or 4KB page.
@@ -47,7 +44,7 @@ bitflags! {
         /// Non-secure bit. For memory accesses from Secure state, specifies whether the output
         /// address is in Secure or Non-secure memory.
         const NS =          1 << 5;
-        /// Access permission: accessable at EL0.
+        /// Access permission: accessible at EL0.
         const AP_EL0 =      1 << 6;
         /// Access permission: read-only.
         const AP_RO =       1 << 7;
@@ -66,8 +63,6 @@ bitflags! {
         /// The Execute-never or Unprivileged execute-never field.
         const UXN =         1 <<  54;
 
-        // Next-level attributes in stage 1 VMSAv8-64 Table descriptors:
-
         /// PXN limit for subsequent levels of lookup.
         const PXN_TABLE =           1 << 59;
         /// XN limit for subsequent levels of lookup.
@@ -82,14 +77,14 @@ bitflags! {
     }
 }
 
-#[repr(u64)]
+#[repr(usize)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum MemType {
     Device = 0,
     Normal = 1,
 }
 
-impl DescriptorAttr {
+impl PTEAttr {
     const ATTR_INDEX_MASK: usize = 0b111_00;
 
     const fn from_mem_type(mem_type: MemType) -> Self {
@@ -110,33 +105,33 @@ impl DescriptorAttr {
     }
 }
 
-impl From<DescriptorAttr> for PTEFlags {
-    fn from(attr: DescriptorAttr) -> Self {
+impl From<PTEAttr> for PTEFlags {
+    fn from(attr: PTEAttr) -> Self {
         let mut flags = Self::empty();
-        if attr.contains(DescriptorAttr::VALID) {
+        if attr.contains(PTEAttr::VALID) {
             flags |= Self::R;
         }
-        if !attr.contains(DescriptorAttr::AP_RO) {
+        if !attr.contains(PTEAttr::AP_RO) {
             flags |= Self::W;
         }
-        if attr.contains(DescriptorAttr::AP_EL0) {
-            flags |= Self::USER;
-            if !attr.contains(DescriptorAttr::UXN) {
+        if attr.contains(PTEAttr::AP_EL0) {
+            flags |= Self::U;
+            if !attr.contains(PTEAttr::UXN) {
                 flags |= Self::X;
             }
-        } else if !attr.intersects(DescriptorAttr::PXN) {
+        } else if !attr.intersects(PTEAttr::PXN) {
             flags |= Self::X;
         }
         if attr.mem_type() == MemType::Device {
-            flags |= Self::DEVICE;
+            flags |= Self::D;
         }
         flags
     }
 }
 
-impl From<PTEFlags> for DescriptorAttr {
+impl From<PTEFlags> for PTEAttr {
     fn from(flags: PTEFlags) -> Self {
-        let mut attr = if flags.contains(PTEFlags::DEVICE) {
+        let mut attr = if flags.contains(PTEFlags::D) {
             Self::from_mem_type(MemType::Device)
         } else {
             Self::from_mem_type(MemType::Normal)
@@ -147,7 +142,7 @@ impl From<PTEFlags> for DescriptorAttr {
         if !flags.contains(PTEFlags::W) {
             attr |= Self::AP_RO;
         }
-        if flags.contains(PTEFlags::USER) {
+        if flags.contains(PTEFlags::U) {
             attr |= Self::AP_EL0 | Self::PXN;
             if !flags.contains(PTEFlags::X) {
                 attr |= Self::UXN;

@@ -1,10 +1,9 @@
 use alloc::boxed::Box;
-use core::arch::asm;
 use core::fmt;
 use core::sync::atomic::{AtomicU32, Ordering};
+use crate::arch::reg::wfi;
 
-use crate::mm::address::PAGE_SIZE;
-use crate::mm::page::PageTable;
+use crate::mm::{PAGE_SIZE, PageTable};
 use crate::pr_info;
 use crate::task::context::{Entry, switch_context, TaskContext};
 
@@ -47,7 +46,7 @@ impl Task {
     fn idle_task(_: usize) {
         loop {
             pr_info!("idle\n");
-            unsafe { asm!("wfi") }
+            wfi()
         }
     }
     pub fn new_kernel(name: &'static str, entry: TaskFn, arg: usize) -> Self {

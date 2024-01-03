@@ -23,9 +23,11 @@ unsafe extern "C" fn el1_entry() -> ! {
     adrp x8, __stack_end
     mov	sp, x8
     bl  {init_mmu}
-    //enable Stack pointer
+
     mov x8, #1
     msr SPSEL, x8
+    ldr     x8, =__stack_end
+    mov     sp, x8
     // Jump to Rust code.
     ldr x8, ={main}
     br	x8

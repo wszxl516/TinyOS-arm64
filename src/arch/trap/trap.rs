@@ -19,7 +19,7 @@ fn invalid_exception(frame: &Context) {
 
 #[no_mangle]
 fn sync_exception(frame: &Context) -> isize {
-    DAIF::Irq.disable();
+    DAIF::All.disable();
 
     let ec = SyncException::new();
     match ec.ec {
@@ -81,7 +81,7 @@ fn sync_exception(frame: &Context) -> isize {
     }
     pr_err!("{}\n", frame);
     frame.stacktrace();
-    DAIF::Irq.enable();
+    DAIF::All.enable();
     panic!()
 }
 

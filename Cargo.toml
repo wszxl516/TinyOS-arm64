@@ -11,7 +11,6 @@ tock-registers = "0.9.0"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 paste = "1.0.14"
 linked_list_allocator = { version = "0.10.5" }
-spin = "0.9.8"
 bitflags = { version = "2.4.1", features = [] }
 fdt = "0.1.5"
 [features]

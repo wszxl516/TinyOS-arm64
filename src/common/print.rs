@@ -48,7 +48,7 @@ macro_rules! get_keys {
 macro_rules! print {
     () => {};
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::devices::console::puts(format_args!($fmt $(, $($arg)+)?))
+        $crate::devices::puts(format_args!($fmt $(, $($arg)+)?))
     };
 }
 
@@ -56,14 +56,14 @@ macro_rules! print {
 macro_rules! println {
     () => { print!("\n") };
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::devices::console::puts(format_args!(concat!($fmt, "\n\r") $(, $($arg)+)?))
+        $crate::devices::puts(format_args!(concat!($fmt, "\n\r") $(, $($arg)+)?))
     };
 }
 
 #[macro_export]
 macro_rules! pr_color {
     ($fmt: literal ,$color: expr $(, $($arg: tt)+)?) =>{
-        $crate::devices::console::puts(
+        $crate::devices::puts(
             format_args!(concat!("\x1b[{}m", $fmt, "\x1b[0m"),
             $color
             $(, $($arg)+)?)

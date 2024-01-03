@@ -1,13 +1,11 @@
-use crate::mm::{attr::PTEFlags, entry::PTE};
-use crate::mm::address::PhyAddr;
 use crate::mm::flush::{dsb_all, isb_all, tlb_all};
-use crate::mm::page::PageTable;
+use crate::mm::{PTE, PhyAddr, PTEFlags};
 use crate::reg_write_p;
 
 use super::reg::{MAIR_EL1, SCTLR_EL1, TCR_EL1};
 
 #[link_section = ".data.boot_page_table"]
-static mut BOOT_PT_0: PageTable = PageTable::new();
+static mut BOOT_PT_0: [PTE; 512] = [PTE::empty(); 512];
 
 #[link_section = ".data.boot_page_table"]
 static mut BOOT_PT_1: [PTE; 2] = [PTE::empty(); 2];
@@ -16,19 +14,19 @@ static mut BOOT_PT_1: [PTE; 2] = [PTE::empty(); 2];
 pub fn init_mmu() {
     unsafe {
         // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
-        BOOT_PT_0.entrys[0] = PTE::new_page(PhyAddr::new(BOOT_PT_1.as_ptr() as usize));
+        BOOT_PT_0[0] = PTE::new_table(PhyAddr::new(BOOT_PT_1.as_ptr() as usize));
         // 0x0000_0000_0000..0x0000_4000_0000, block, device memory
         // 1GB
         BOOT_PT_1[0] = PTE::new_entry(
             PhyAddr::new(0),
-            PTEFlags::RW | PTEFlags::DEVICE,
+            PTEFlags::R | PTEFlags::W | PTEFlags::D,
             true,
         );
         // 0x0000_4000_0000..0x0000_8000_0000, block, normal memory
         // 1GB
         BOOT_PT_1[1] = PTE::new_entry(
             PhyAddr::new(0x4000_0000),
-            PTEFlags::RWX,
+            PTEFlags::R | PTEFlags::W | PTEFlags::X,
             true,
         );
     }

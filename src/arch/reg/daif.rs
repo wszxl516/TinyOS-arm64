@@ -1,4 +1,5 @@
 use core::arch::asm;
+use crate::reg_read_p;
 
 /* DAIF, Interrupt Mask Bits */
 #[allow(dead_code)]
@@ -45,6 +46,17 @@ impl DAIF {
             DAIF::Irq => daif_op!(DAIFSet, Self::IRQ_BITS),
             DAIF::Fiq => daif_op!(DAIFSet, Self::FIQ_BITS),
             DAIF::All => daif_op!(DAIFSet, Self::ALL_BITS),
+        }
+    }
+    #[allow(dead_code)]
+    #[inline(always)]
+    pub fn is_disabled(&self) -> bool {
+        match self {
+            DAIF::Dbg => (reg_read_p!(DAIF) >> 9).eq(&1),
+            DAIF::Abt => (reg_read_p!(DAIF) >> 8).eq(&1),
+            DAIF::Irq => (reg_read_p!(DAIF) >> 7).eq(&1),
+            DAIF::Fiq => (reg_read_p!(DAIF) >> 6).eq(&1),
+            DAIF::All => (reg_read_p!(DAIF) & 0x3c0).eq(&0x3c0)
         }
     }
 }

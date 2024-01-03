@@ -1,6 +1,4 @@
-use core::arch::asm;
-
-use crate::arch::reg::DAIF;
+use crate::arch::reg::{DAIF, wfi};
 use crate::common::queue::Queue;
 use crate::pr_notice;
 use crate::task::task::{Task, TaskFn};
@@ -68,17 +66,15 @@ pub fn init() {
     add_task("task1: {}", |_| loop {
         for i in 0..10 {
             pr_notice!("Task1: {}\n", i);
-            unsafe {
-                asm!("wfi");
-            }
+            wfi()
+
         }
     }, 0);
     add_task("task2: {}", |_| loop {
         for i in 0..10 {
             pr_notice!("Task2: {}\n", i);
-            unsafe {
-                asm!("wfi");
-            }
+            wfi()
+
         }
     }, 0);
 }

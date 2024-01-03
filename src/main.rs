@@ -9,6 +9,8 @@
 #![feature(slice_pattern)]
 #![feature(ptr_metadata)]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
+
 extern crate alloc;
 
 mod arch;
@@ -21,12 +23,9 @@ mod task;
 #[no_mangle]
 fn kernel_main() -> ! {
     arch::reg::DAIF::Irq.disable();
-    arch::setup_gic();
-    arch::setup_timer();
-    devices::console::setup_console();
-    arch::setup_trap();
-    mm::init_heap();
-    mm::init_kernel_space();
+    mm::init();
+    arch::init();
+    devices::init();
     platform_info();
     task::scheduler::init();
     task::scheduler::yield_current();

@@ -39,7 +39,6 @@ class Symbol:
     @staticmethod
     def from_line(line_str: str):
         sym_self = Symbol()
-        print(line_str)
         value = line_str.split()
         sym_self.address, sym_self.size, sym_self.type, sym_self.name = (
             int(value[0], 16), int(value[1], 16), value[2], value[3])

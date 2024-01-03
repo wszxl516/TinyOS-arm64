@@ -1,12 +1,14 @@
 //! ARM Generic Interrupt Controller v2.
 #![allow(dead_code)]
 
+use lazy_static::lazy_static;
 use tock_registers::interfaces::{Readable, Writeable};
 
+use crate::common::sync::Mutex;
 use reg::{GICC, GICD};
 
 use crate::config::{GICC_BASE, GICD_BASE};
-use crate::mm::address::VirtAddr;
+use crate::mm::VirtAddr;
 
 mod reg;
 
@@ -20,10 +22,15 @@ pub struct GICv2 {
     handlers: [Option<HandlerFn>; NUM_IRQ],
 }
 
-pub static mut GIC_V2: GICv2 = GICv2::form_addr(
-    VirtAddr::from_phy(GICD_BASE).as_usize(),
-    VirtAddr::from_phy(GICC_BASE).as_usize(),
-);
+lazy_static! {
+    pub static ref GIC_V2: Mutex<GICv2> = {
+        let gic = GICv2::form_addr(
+            VirtAddr::from_phy(GICD_BASE).as_usize(),
+            VirtAddr::from_phy(GICC_BASE).as_usize(),
+        );
+        Mutex::new(gic)
+    };
+}
 
 unsafe impl Sync for GICv2 {}
 
@@ -36,6 +43,9 @@ impl GICv2 {
             gicc_base,
             handlers: [Self::HANDLER_NONE; NUM_IRQ],
         }
+    }
+    pub fn set_handler(&mut self, irq: u32, handler: HandlerFn){
+        self.handlers[irq as usize].replace( handler);
     }
     fn gicc(&self) -> &'static mut GICC {
         unsafe { &mut *(self.gicc_base as *mut GICC) }
@@ -121,24 +131,46 @@ pub enum TriggerMode {
 }
 
 pub fn setup_irq(irq: u32, mode: TriggerMode, handler: HandlerFn) {
-    unsafe {
-        GIC_V2.setup_irq(irq, mode);
-        GIC_V2.handlers[irq as usize].replace(handler);
+    match GIC_V2.lock() {
+        mut gic => {
+            gic.setup_irq(irq, mode);
+            gic.set_handler(irq, handler);
+
+        }
     }
 }
 
 pub fn fetch_handler(irq: u32) -> Option<HandlerFn> {
-    unsafe { GIC_V2.handlers[irq as usize] }
+    match GIC_V2.lock() {
+        gic => {
+            gic.handlers[irq as usize]
+
+        }
+    }
 }
 
 pub fn enable_irq(irq: u32) {
-    unsafe { GIC_V2.enable(irq) }
+    match GIC_V2.lock() {
+        gic => {
+            gic.enable(irq)
+
+        }
+    }
 }
 
 pub fn fetch_irq() -> Option<u32> {
-    unsafe { GIC_V2.fetch_irq() }
+    match GIC_V2.lock() {
+        gic => {
+            gic.fetch_irq()
+
+        }
+    }
 }
 
 pub fn ack_irq(irq: u32) {
-    unsafe { GIC_V2.clear_pending(irq) }
+    match GIC_V2.lock() {
+        gic => {
+            gic.clear_pending(irq)
+        }
+    }
 }

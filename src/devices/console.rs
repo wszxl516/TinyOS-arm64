@@ -5,11 +5,11 @@ use arrayvec::ArrayVec;
 
 use crate::arch::{setup_irq, TriggerMode};
 use crate::devices::uart::{Pl011Uart, Read};
-use crate::mm::address::VirtAddr;
+use crate::mm::VirtAddr;
 
 use super::super::config::{PL011_IRQ, UART_ADDRESS};
 
-static mut UART: Pl011Uart = Pl011Uart::new(UART_ADDRESS);
+static mut UART: Pl011Uart = Pl011Uart::new(VirtAddr::from_phy(UART_ADDRESS).as_usize());
 static mut UART_RX_BUFFER: ArrayVec<u8, 64> = ArrayVec::new_const();
 
 pub fn puts(args: fmt::Arguments) {
