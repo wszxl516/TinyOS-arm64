@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::mm::page::{PAGE_ENTRY_COUNT, PHYS_VIRT_OFFSET, VA_MAX_BITS};
 use crate::{align_down, page_offset};
-use super::PAGE_SIZE;
+use super::{BLOCK_2M, PAGE_SIZE};
 pub const PA_1TB_BITS: usize = 40;
 
 
@@ -77,8 +77,11 @@ impl VirtAddr {
     pub const fn as_mut_ptr(&self) -> *mut u8 {
         self.as_usize() as _
     }
-    pub const fn align_down(&self) -> Self {
+    pub const fn align_down_4k(&self) -> Self {
         Self(align_down!(self.0, PAGE_SIZE))
+    }
+    pub const fn align_down_2m(&self) -> Self {
+        Self(align_down!(self.0, BLOCK_2M))
     }
     pub const fn page_offset(&self) -> usize {
         page_offset!(self.0, PAGE_SIZE)
@@ -90,12 +93,14 @@ impl VirtAddr {
         PhyAddr::new(self.0 - PHYS_VIRT_OFFSET)
     }
     #[inline]
-    pub const fn vpn(&self) -> (usize, usize, usize, usize) {
-        (
-            (self.0 >> Self::PAGE_L0_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            (self.0 >> Self::PAGE_L1_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            (self.0 >> Self::PAGE_L2_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            (self.0 >> Self::PAGE_L3_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-        )
+    pub const fn vpn(&self, level: usize) -> usize {
+        assert!(level <= 3);
+        match level {
+            0=> (self.0 >> Self::PAGE_L0_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            1=> (self.0 >> Self::PAGE_L1_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            2=> (self.0 >> Self::PAGE_L2_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            3=> (self.0 >> Self::PAGE_L3_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            _ => unreachable!()
+        }
     }
 }

@@ -104,11 +104,6 @@ fn platform_irq() -> i32 {
 }
 
 #[no_mangle]
-fn thread_preempt() {
-    println!("thread_preempt")
-}
-
-#[no_mangle]
 fn platform_fiq() {
     println!("platform_fiq")
 }

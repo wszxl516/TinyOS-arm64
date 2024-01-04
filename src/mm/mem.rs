@@ -1,9 +1,11 @@
 use crate::config::{GICD_BASE, GIC_SIZE, MEM_SIZE, UART_ADDRESS};
 use crate::mm::{PTEFlags, PageTable, PhyAddr, VirtAddr, PAGE_SIZE};
-use crate::{lds_address, pr_address, pr_delimiter, pr_notice, reg_write_p};
+use crate::{lds_address, reg_write_p};
 use lazy_static::lazy_static;
 use crate::mm::flush::{dsb_all, isb_all, tlb_all};
 use super::super::common::sync::{Mutex};
+use crate::{pr_address, pr_delimiter, pr_notice};
+
 lazy_static! {
     #[link_section = ".data.kernel_root"]
     static ref KERNEL_SPACE: Mutex<PageTable> = {
@@ -12,9 +14,9 @@ lazy_static! {
         Mutex::new(k)
     };
 }
-pub fn map_area(va_start: VirtAddr, pa_start: PhyAddr, size: usize, flags: PTEFlags, name: &str) {
+pub fn map_area(va_start: VirtAddr, pa_start: PhyAddr, size: usize, flags: PTEFlags, _name: &str) {
     pr_delimiter!();
-    pr_address!(name, va_start, size, flags);
+    pr_address!(_name, va_start, size, flags);
     match KERNEL_SPACE.lock() {
         mut lock => {
             lock.map_area(va_start, pa_start, size, flags, true)

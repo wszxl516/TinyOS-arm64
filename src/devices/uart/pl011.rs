@@ -195,9 +195,6 @@ impl Pl011Uart {
             base_addr: addr,
         }
     }
-    pub fn reset_base_address(&mut self, addr: usize) {
-        self.base_addr = addr
-    }
     pub fn init(&self, baud_rate: u32, uart_clk: u32) {
         self.reg().receive_status.set(0);
         self.reg()

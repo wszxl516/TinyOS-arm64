@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 use core::fmt::{Display, Formatter};
 bitflags! {
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     pub struct PTEFlags: usize {
         const R        = 1 << 0;
         const W        = 1 << 1;

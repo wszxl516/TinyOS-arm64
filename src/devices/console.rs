@@ -70,7 +70,6 @@ fn pl011uart_irq_handler(_irq: u32) -> i32 {
 
 pub fn setup_console() {
     unsafe {
-        UART.reset_base_address(VirtAddr::from_phy(UART_ADDRESS).as_usize());
         UART.init(0, 0)
     };
     setup_irq(PL011_IRQ, TriggerMode::Level, pl011uart_irq_handler);

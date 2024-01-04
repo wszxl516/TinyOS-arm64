@@ -1,13 +1,12 @@
 use crate::addr2slice;
-use crate::mm::{PAGE_SIZE, PhyAddr};
 use crate::mm::attr::{PTEAttr, PTEFlags};
 use crate::mm::page::PAGE_ENTRY_COUNT;
+use crate::mm::{PhyAddr, PAGE_SIZE};
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct PTE(pub usize);
 
-//Page table entry
 impl PTE {
     const PHYS_ADDR_MASK: usize = PhyAddr::MAX & !(PAGE_SIZE - 1);
 
@@ -28,7 +27,7 @@ impl PTE {
         Self(attr.bits() | (phy_addr.as_usize() & Self::PHYS_ADDR_MASK))
     }
 
-    pub fn phy_addr(&self) -> PhyAddr {
+    pub fn as_phy_addr(&self) -> PhyAddr {
         PhyAddr::new(self.0 & Self::PHYS_ADDR_MASK)
     }
     pub fn flags(&self) -> PTEFlags {
@@ -37,34 +36,35 @@ impl PTE {
     pub fn is_unused(&self) -> bool {
         self.0 == 0
     }
-    fn is_present(&self) -> bool {
+    pub fn is_valid(&self) -> bool {
         PTEAttr::from_bits_truncate(self.0).contains(PTEAttr::VALID)
     }
-    fn is_block(&self) -> bool {
+    pub fn is_block(&self) -> bool {
         !PTEAttr::from_bits_truncate(self.0).contains(PTEAttr::NON_BLOCK)
     }
     pub fn clear(&mut self) {
         self.0 = 0
     }
-    pub fn as_page<'a>(&mut self) -> Option<&'a mut [PTE]> {
-        if !self.is_present() {
-            None
-        } else {
-            assert!(!self.is_block());
-            Some(addr2slice!(self.phy_addr().into_vaddr().as_mut_ptr(),PAGE_ENTRY_COUNT,PTE ))
-        }
-    }
 
-    pub fn get_page<'a>(
-        &mut self,
-        mut allocator: impl FnMut() -> PhyAddr,
-    ) -> Option<&'a mut [PTE]> {
+    pub fn as_page<'a>(&mut self, mut allocator: impl FnMut() -> PhyAddr) -> Option<&'a mut [PTE]> {
         if self.is_unused() {
             let phy_addr = allocator();
             *self = PTE::new_table(phy_addr);
-            Some(addr2slice!(phy_addr.into_vaddr().as_mut_ptr(), PAGE_ENTRY_COUNT, PTE))
+            Some(addr2slice!(
+                phy_addr.into_vaddr().as_mut_ptr(),
+                PAGE_ENTRY_COUNT,
+                PTE
+            ))
         } else {
-            self.as_page()
+            if !self.is_valid() || self.is_block() {
+                None
+            } else {
+                Some(addr2slice!(
+                    self.as_phy_addr().into_vaddr().as_mut_ptr(),
+                    PAGE_ENTRY_COUNT,
+                    PTE
+                ))
+            }
         }
     }
 }

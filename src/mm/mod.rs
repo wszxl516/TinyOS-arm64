@@ -13,6 +13,7 @@ mod entry;
 mod mem;
 
 pub const PAGE_SIZE: usize = 0x1000;
+pub const BLOCK_2M: usize = PAGE_SIZE * 0x200;
 #[macro_export]
 macro_rules! align_down {
     ($addr:expr, $page_size:ident) => {
@@ -45,6 +46,13 @@ macro_rules! addr2slice {
         unsafe { core::slice::from_raw_parts_mut(($addr) as *mut u8 as *mut $slice_type, $size) }
     }
 }
+#[macro_export]
+macro_rules! mem_set {
+    ($address: expr, $len: expr, $value: expr) => {
+        unsafe { core::slice::from_raw_parts_mut($address, $len).fill($value) }
+    }
+}
+
 pub fn init(){
     heap::init_heap();
     mem::init_kernel_space();

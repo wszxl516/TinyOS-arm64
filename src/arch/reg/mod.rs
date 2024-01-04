@@ -41,11 +41,6 @@ pub fn set_thread_pointer(tp: usize) {
     reg_write_p!(TPIDR_EL1, tp)
 }
 
-#[allow(dead_code)]
-#[inline(always)]
-pub fn irq_disabled() -> bool {
-    ((reg_read_p!(DAIF) >> 6) & 1).eq(&1)
-}
 
 #[allow(dead_code)]
 #[inline(always)]
