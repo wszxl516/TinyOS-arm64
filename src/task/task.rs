@@ -5,19 +5,19 @@ use crate::arch::reg::wfi;
 
 use crate::mm::{PAGE_SIZE, PageTable};
 use crate::pr_info;
-use crate::task::context::{Entry, switch_context, TaskContext};
+use crate::task::context::{Entry, TaskContext};
 
 pub type TaskFn = fn(usize) -> !;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u32);
 
-static NEXT_PID: AtomicU32 = AtomicU32::new(1);
 
 impl TaskId {
     const IDLE_TASK_ID: Self = Self(0);
 
     fn alloc() -> Self {
+        static NEXT_PID: AtomicU32 = AtomicU32::new(1);
         Self(NEXT_PID.fetch_add(1, Ordering::AcqRel))
     }
     #[allow(dead_code)]
@@ -34,12 +34,12 @@ impl From<u32> for TaskId {
 
 #[repr(C)]
 pub struct Task {
-    name: &'static str,
+    pub name: &'static str,
     pub ctx: TaskContext,
     pub entry: Entry,
     pub k_stack: Stack<PAGE_SIZE>,
-    pid: TaskId,
-    pub page: PageTable,
+    pub pid: TaskId,
+    pub page: Option<PageTable>,
 }
 
 impl Task {
@@ -60,7 +60,7 @@ impl Task {
             },
             k_stack: stack,
             pid: TaskId::alloc(),
-            page: PageTable::new(),
+            page: None,
         }
     }
     pub fn idle() -> Self {
@@ -74,14 +74,10 @@ impl Task {
             },
             k_stack: stack,
             pid: TaskId::IDLE_TASK_ID,
-            page: PageTable::new(),
+            page: None,
         }
     }
-    pub fn switch_to(&mut self, next: &Task) {
-        unsafe {
-            switch_context(&mut self.ctx, &next.ctx);
-        }
-    }
+
     #[allow(dead_code)]
     pub fn pid(&self) -> TaskId {
         self.pid

@@ -11,7 +11,8 @@ use crate::task::task::TaskFn;
 #[allow(named_asm_labels)]
 pub unsafe extern "C" fn switch_context(_current: *mut TaskContext, _next: *const TaskContext) {
     asm!(
-    "
+    "   cmp     x0, xzr
+        b.eq    first_task
         stp     x29, x30, [x0, 12 * 8]
         stp     x27, x28, [x0, 10 * 8]
         stp     x25, x26, [x0, 8 * 8]
@@ -21,7 +22,7 @@ pub unsafe extern "C" fn switch_context(_current: *mut TaskContext, _next: *cons
         mov     x19, sp
         mrs     x20, tpidr_el0
         stp     x19, x20, [x0]
-
+first_task:
         ldp     x19, x20, [x1]
         mov     sp, x19
         msr     tpidr_el0, x20

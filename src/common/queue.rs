@@ -7,7 +7,8 @@ struct Node<T> {
     item: T,
     next: Link<T>,
 }
-
+unsafe impl<T> Sync for Queue<T>{}
+unsafe impl<T> Send for Queue<T>{}
 pub struct Queue<T> {
     head: Link<T>,
     tail: *mut Node<T>,
@@ -69,6 +70,6 @@ impl<T> Queue<T> {
             }
         }
 
-        self.head.as_mut().map(|head| &mut head.item)
+        self.head()
     }
 }
