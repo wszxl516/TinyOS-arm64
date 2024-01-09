@@ -5,3 +5,5 @@
 /arm64-virt.dts
 /.idea
 /qemu.log
+/hd.img
+/log.txt

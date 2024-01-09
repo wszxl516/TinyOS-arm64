@@ -4,7 +4,7 @@
 pub mod TCR_EL1 {
     use crate::def_reg_fn;
 
-    pub const BITS40_1TB: usize = 0b010 << 32;
+    pub const BITS48_256TB: usize = 0b101 << 32;
     pub const TG1_16KB: usize = 0b01 << 30;
     pub const TG1_4KB: usize = 0b10 << 30;
     pub const TG1_64KB: usize = 0b11 << 30;

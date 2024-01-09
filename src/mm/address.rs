@@ -1,8 +1,10 @@
 use core::fmt;
 
-use crate::mm::page::{PAGE_ENTRY_COUNT, PHYS_VIRT_OFFSET, VA_MAX_BITS};
 use crate::{align_down, page_offset};
+use crate::mm::page::{PAGE_ENTRY_COUNT, PHYS_VIRT_OFFSET, VA_MAX_BITS};
+
 use super::{BLOCK_2M, PAGE_SIZE};
+
 pub const PA_1TB_BITS: usize = 40;
 
 
@@ -30,6 +32,7 @@ impl fmt::Display for PhyAddr {
         f.write_fmt(format_args!("{:#x}", self.0))
     }
 }
+
 impl fmt::Display for VirtAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_fmt(format_args!("{:#x}", self.0))
@@ -96,10 +99,10 @@ impl VirtAddr {
     pub const fn vpn(&self, level: usize) -> usize {
         assert!(level <= 3);
         match level {
-            0=> (self.0 >> Self::PAGE_L0_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            1=> (self.0 >> Self::PAGE_L1_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            2=> (self.0 >> Self::PAGE_L2_OFFSET) & (PAGE_ENTRY_COUNT - 1),
-            3=> (self.0 >> Self::PAGE_L3_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            0 => (self.0 >> Self::PAGE_L0_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            1 => (self.0 >> Self::PAGE_L1_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            2 => (self.0 >> Self::PAGE_L2_OFFSET) & (PAGE_ENTRY_COUNT - 1),
+            3 => (self.0 >> Self::PAGE_L3_OFFSET) & (PAGE_ENTRY_COUNT - 1),
             _ => unreachable!()
         }
     }

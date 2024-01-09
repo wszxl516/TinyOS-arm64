@@ -41,12 +41,19 @@ pub fn set_thread_pointer(tp: usize) {
     reg_write_p!(TPIDR_EL1, tp)
 }
 
+#[allow(dead_code)]
+#[inline(always)]
+pub fn nop() {
+    unsafe {
+        core::arch::aarch64::__nop()
+    }
+}
 
 #[allow(dead_code)]
 #[inline(always)]
 pub fn wfe() {
     unsafe {
-        asm!("wfe", options(nomem, nostack));
+        core::arch::aarch64::__wfe()
     }
 }
 
@@ -54,18 +61,16 @@ pub fn wfe() {
 #[inline(always)]
 pub fn wfi() {
     unsafe {
-        asm!("wfi", options(nomem, nostack));
+        core::arch::aarch64::__wfi()
     }
 }
 
 
 #[allow(dead_code)]
 #[inline(always)]
-pub fn idle(cycles: usize) {
+pub fn wait_cycles(cycles: usize) {
     for _ in 0..cycles {
-        unsafe {
-            asm!("nop", options(nomem, nostack));
-        }
+        nop()
     }
 }
 

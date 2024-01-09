@@ -1,7 +1,7 @@
 use core::arch::global_asm;
 
 use crate::{get_bit, pr_err, println, reg_read_p};
-use crate::arch::gicv2::{ack_irq, fetch_handler, fetch_irq};
+use crate::arch::{ack_irq, fetch_handler, fetch_irq};
 use crate::arch::reg::DAIF;
 use crate::arch::trap::syscall::syscall;
 
@@ -93,7 +93,7 @@ fn platform_irq() -> i32 {
         Some(irq) => {
             match fetch_handler(irq) {
                 None => {
-                    pr_err!("Unknown platform_irq: {:?}", irq)
+                    panic!("Unknown platform_irq: {:?}", irq.0)
                 }
                 Some(handler) => ret = handler(irq),
             }

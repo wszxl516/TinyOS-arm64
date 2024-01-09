@@ -38,6 +38,7 @@
 .macro pop ra, rb
     ldp \ra, \rb, [sp], #16
 .endm
+
 .macro putc c
     mov x8, #0x9000000
     mov x9, \c

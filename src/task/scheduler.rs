@@ -1,4 +1,4 @@
-use crate::arch::reg::{wfi, DAIF};
+use crate::arch::reg::{DAIF, wfi};
 use crate::common::queue::Queue;
 use crate::pr_notice;
 use crate::task::context::{switch_context, TaskContext};
@@ -8,16 +8,18 @@ static mut SCHEDULER: Scheduler = Scheduler::new();
 
 
 #[derive(PartialEq)]
-pub enum State{
+pub enum State {
     Initialized,
     Running,
     Stopped,
 }
-impl State{
-    pub fn is_running(&self) -> bool{
+
+impl State {
+    pub fn is_running(&self) -> bool {
         self == &Self::Running
     }
 }
+
 pub struct Scheduler {
     queue: Queue<Task>,
     idle: Option<Task>,
@@ -35,7 +37,6 @@ impl Scheduler {
     pub fn init(&mut self) {
         self.idle.replace(Task::idle());
         self.state = State::Initialized;
-
     }
     pub fn switch(&mut self, current: *mut Task) {
         //start first task
@@ -51,7 +52,7 @@ impl Scheduler {
                         unsafe { switch_context(&mut (*current).ctx, &(*next).ctx) }
                     }
                 }
-                None =>{}
+                None => {}
             }
         }
     }
@@ -59,7 +60,7 @@ impl Scheduler {
     pub fn yield_current(&mut self) {
         match self.current() {
             //Scheduler not Initialized
-            None => {},
+            None => {}
             Some(current) => {
                 DAIF::Irq.enable();
                 self.switch(current);
@@ -71,7 +72,7 @@ impl Scheduler {
         self.queue.push_front(Task::new_kernel(name, func, arg));
     }
     pub fn idle(&mut self) -> Option<*mut Task> {
-        match &mut self.idle{
+        match &mut self.idle {
             None => None,
             Some(idle) => Some(idle)
         }

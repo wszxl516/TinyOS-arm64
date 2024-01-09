@@ -1,5 +1,5 @@
+use crate::mm::{PhyAddr, PTE, PTEFlags};
 use crate::mm::flush::{dsb_all, isb_all, tlb_all};
-use crate::mm::{PTE, PhyAddr, PTEFlags};
 use crate::reg_write_p;
 
 use super::reg::{MAIR_EL1, SCTLR_EL1, TCR_EL1};
@@ -42,7 +42,7 @@ pub fn init_mmu() {
     );
     // setup translation controls
     TCR_EL1::write(
-        TCR_EL1::BITS40_1TB
+        TCR_EL1::BITS48_256TB
             | TCR_EL1::T1SZ(16)
             | TCR_EL1::WALKS_ON_MISS
             | TCR_EL1::IRGN1_NORMAL_INNER

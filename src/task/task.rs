@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
 use core::fmt;
 use core::sync::atomic::{AtomicU32, Ordering};
-use crate::arch::reg::wfi;
 
+use crate::arch::reg::wfi;
 use crate::mm::{PAGE_SIZE, PageTable};
 use crate::pr_info;
 use crate::task::context::{Entry, TaskContext};

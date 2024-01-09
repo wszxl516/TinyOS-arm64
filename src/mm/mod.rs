@@ -1,8 +1,7 @@
 pub use address::{PhyAddr, VirtAddr};
-pub use page::{PageTable};
-pub use entry::PTE;
 pub use attr::PTEFlags;
-
+pub use entry::PTE;
+pub use page::PageTable;
 
 mod address;
 pub mod heap;
@@ -53,7 +52,7 @@ macro_rules! mem_set {
     }
 }
 
-pub fn init(){
+pub fn init() {
     heap::init_heap();
     mem::init_kernel_space();
 }

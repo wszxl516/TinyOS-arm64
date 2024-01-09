@@ -1,7 +1,7 @@
 use crate::addr2slice;
+use crate::mm::{PAGE_SIZE, PhyAddr};
 use crate::mm::attr::{PTEAttr, PTEFlags};
 use crate::mm::page::PAGE_ENTRY_COUNT;
-use crate::mm::{PhyAddr, PAGE_SIZE};
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]

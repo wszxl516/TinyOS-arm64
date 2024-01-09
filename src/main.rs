@@ -10,7 +10,10 @@
 #![feature(ptr_metadata)]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
-
+#![feature(stmt_expr_attributes)]
+#![feature(const_option)]
+#![feature(stdsimd)]
+#![feature(mem_copy_fn)]
 extern crate alloc;
 
 mod arch;
@@ -26,36 +29,28 @@ fn kernel_main() -> ! {
     mm::init();
     arch::init();
     devices::init();
-    platform_info();
+    #[cfg(feature = "test")]
+    test::test_abort();
     task::scheduler::init();
     task::scheduler::yield_current();
     arch::reg::DAIF::Irq.enable();
-    #[cfg(feature = "test")]
-    test::test_abort();
     loop {}
 }
 
 
-fn platform_info() {
-    unsafe {
-        let dtb = fdt::Fdt::from_ptr(arch::BOOT_ARGS[0].into_vaddr().as_usize() as *const u8).unwrap();
-        if let Some(platform) = dtb.find_node("/platform-bus") {
-            pr_notice!("Model: {}, Platform: {}\n",dtb.root().model() ,platform.compatible().unwrap().first())
-        }
-    }
-}
-
 #[cfg(feature = "test")]
 mod test {
     #[inline(never)]
+    #[no_mangle]
     pub fn test_abort() {
         use core::arch::asm;
-        test1();
+        test_stacktrace();
         unsafe { asm!("ldr x0, [{tmp}, 0]", tmp = in(reg) usize::MAX) };
     }
 
     #[inline(never)]
-    fn test1() {
+    #[no_mangle]
+    fn test_stacktrace() {
         use core::arch::asm;
         unsafe { asm!("ldr x0, [{tmp}, 0]", tmp = in(reg) usize::MAX) };
     }

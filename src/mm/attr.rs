@@ -1,5 +1,7 @@
-use bitflags::bitflags;
 use core::fmt::{Display, Formatter};
+
+use bitflags::bitflags;
+
 bitflags! {
     #[derive(Copy, Clone, Debug)]
     pub struct PTEFlags: usize {

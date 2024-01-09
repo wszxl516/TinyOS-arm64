@@ -1,22 +1,29 @@
 #![allow(dead_code)]
+
 use core::cell::UnsafeCell;
 use core::default::Default;
-use core::hint::spin_loop as cpu_relax;
+use core::hint::spin_loop;
 use core::marker::Sync;
 use core::ops::{Deref, DerefMut, Drop};
 use core::option::Option::{self, None, Some};
 use core::sync::atomic::{AtomicBool, Ordering};
 
+use crate::arch::reg::DAIF;
+
 pub struct Mutex<T: ?Sized> {
+    no_irq: bool,
     lock: AtomicBool,
     data: UnsafeCell<T>,
 }
 
 #[derive(Debug)]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
+    irq_enabled_before: bool,
     lock: &'a AtomicBool,
     data: &'a mut T,
+    no_irq: bool,
 }
+
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
     pub fn get_mut(&mut self) -> &mut T {
         self.deref_mut()
@@ -27,13 +34,22 @@ impl<'a, T: ?Sized> MutexGuard<'a, T> {
 }
 
 unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
+
 unsafe impl<T: ?Sized + Send> Send for Mutex<T> {}
 
 impl<T> Mutex<T> {
-    pub const fn new(user_data: T) -> Mutex<T> {
+    pub const fn new(data: T) -> Mutex<T> {
         Mutex {
             lock: AtomicBool::new(false),
-            data: UnsafeCell::new(user_data),
+            data: UnsafeCell::new(data),
+            no_irq: false,
+        }
+    }
+    pub const fn new_no_irq(data: T) -> Mutex<T> {
+        Mutex {
+            lock: AtomicBool::new(false),
+            data: UnsafeCell::new(data),
+            no_irq: true,
         }
     }
 
@@ -45,24 +61,30 @@ impl<T> Mutex<T> {
 }
 
 impl<T: ?Sized> Mutex<T> {
-    fn obtain_lock(&self) {
-        while self
-            .lock
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .unwrap_or(false)
-            != false
-        {
-            while self.lock.load(Ordering::Relaxed) {
-                cpu_relax();
-            }
-        }
+    pub fn is_locked(&self) -> bool {
+        self.lock.load(Ordering::Relaxed)
     }
 
     pub fn lock(&self) -> MutexGuard<T> {
-        self.obtain_lock();
+        let mut irq_state = false;
+        if self.no_irq {
+            irq_state = !DAIF::Irq.is_disabled();
+            DAIF::Irq.disable();
+        }
+        while self
+            .lock
+            .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            while self.is_locked() {
+                spin_loop();
+            }
+        }
         MutexGuard {
+            irq_enabled_before: irq_state,
             lock: &self.lock,
             data: unsafe { &mut *self.data.get() },
+            no_irq: self.no_irq,
         }
     }
 
@@ -72,18 +94,27 @@ impl<T: ?Sized> Mutex<T> {
     }
 
     pub fn try_lock(&self) -> Option<MutexGuard<T>> {
-        match self
+        let mut irq_state = false;
+        if self.no_irq {
+            irq_state = !DAIF::Irq.is_disabled();
+            DAIF::Irq.disable();
+        }
+        if self
             .lock
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
         {
-            Ok(l) => match l {
-                true => None,
-                false => Some(MutexGuard {
-                    lock: &self.lock,
-                    data: unsafe { &mut *self.data.get() },
-                }),
-            },
-            Err(_) => None,
+            Some(MutexGuard {
+                irq_enabled_before: irq_state,
+                lock: &self.lock,
+                data: unsafe { &mut *self.data.get() },
+                no_irq: self.no_irq,
+            })
+        } else {
+            if irq_state {
+                DAIF::Irq.enable();
+            }
+            None
         }
     }
 }
@@ -111,5 +142,8 @@ impl<'a, T: ?Sized> DerefMut for MutexGuard<'a, T> {
 impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
     fn drop(&mut self) {
         self.lock.store(false, Ordering::Release);
+        if self.irq_enabled_before && self.no_irq {
+            DAIF::Irq.enable();
+        }
     }
 }

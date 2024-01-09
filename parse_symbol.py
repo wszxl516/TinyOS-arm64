@@ -72,7 +72,10 @@ def main(elf_path: str, dist_path: str, section_size: int, verbose: bool):
         fp.write(header_bytes)
         all_len += header_bytes.__len__()
         for line in res.splitlines():
-            sym = Symbol.from_line(line)
+            try:
+                sym = Symbol.from_line(line)
+            except ValueError:
+                continue
             if sym.type == 't' or sym.type == 'T' or sym.type == 'A' or sym.type == 'a':
                 if verbose:
                     print("0x{:018x}, 0x{:018x}, {}".format(sym.address, sym.size, sym.name))

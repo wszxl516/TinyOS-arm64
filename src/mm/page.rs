@@ -1,8 +1,11 @@
 #![allow(dead_code)]
+
+use crate::{addr2slice, align_up};
 use crate::mm::attr::PTEFlags;
 use crate::mm::entry::PTE;
 use crate::mm::heap::page_alloc;
-use crate::{addr2slice, align_up};
+
+use super::{PAGE_SIZE, PhyAddr, VirtAddr};
 
 pub const USER_START: usize = 0x0000_0000_0000_0000;
 pub const USER_END: usize = 0x0000_FFFF_FFFF_FFFF;
@@ -12,10 +15,10 @@ pub const PHYS_VIRT_OFFSET: usize = KERNEL_START;
 pub const VA_MAX_BITS: usize = 48;
 pub const PAGE_ENTRY_COUNT: usize = 512;
 
-use super::{PhyAddr, VirtAddr, PAGE_SIZE};
 pub struct PageTable {
     root_addr: PhyAddr,
 }
+
 impl PageTable {
     pub const L0: usize = 0;
     pub const L1: usize = 1;
@@ -53,7 +56,7 @@ impl PageTable {
     }
     pub fn query(&mut self, vaddr: VirtAddr, level: usize) -> Option<(PhyAddr, PTEFlags)> {
         let entry = self.find_entry(vaddr, level)?;
-        if entry.is_unused() || (level > 0 && !entry.is_block()){
+        if entry.is_unused() || (level > 0 && !entry.is_block()) {
             return None;
         }
         Some((
@@ -111,7 +114,6 @@ impl PageTable {
                 *entry = PTE::new_entry(phy_addr.align_down(), flags, false);
             }
         }
-
     }
 
     pub fn unmap_page(&mut self, vaddr: VirtAddr) {
@@ -121,7 +123,6 @@ impl PageTable {
                 entry.clear();
             }
         }
-
     }
 
     pub fn map_area(

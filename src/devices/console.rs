@@ -3,7 +3,7 @@ use core::fmt::Write;
 
 use arrayvec::ArrayVec;
 
-use crate::arch::{setup_irq, TriggerMode};
+use crate::arch::{IntId, setup_irq, Trigger};
 use crate::devices::uart::{Pl011Uart, Read};
 use crate::mm::VirtAddr;
 
@@ -19,14 +19,14 @@ pub fn puts(args: fmt::Arguments) {
 #[macro_export]
 macro_rules! gets {
     ($buffer: expr) => {
-        crate::devices::console::gets($buffer)
+        crate::devices::gets($buffer)
     };
 }
 #[macro_export]
 macro_rules! read_key {
     () => {{
         let mut key = [0u8; 1];
-        while crate::devices::console::gets(&mut key) == 0 {}
+        while crate::devices::gets(&mut key) == 0 {}
         key[0]
     }};
 }
@@ -48,7 +48,7 @@ pub fn gets(buffer: &mut [u8]) -> usize {
     }
 }
 
-fn pl011uart_irq_handler(_irq: u32) -> i32 {
+fn pl011uart_irq_handler(_irq: IntId) -> i32 {
     unsafe {
         match UART.is_rx_interrupt() {
             true => {
@@ -72,5 +72,5 @@ pub fn setup_console() {
     unsafe {
         UART.init(0, 0)
     };
-    setup_irq(PL011_IRQ, TriggerMode::Level, pl011uart_irq_handler);
+    setup_irq(IntId::spi(PL011_IRQ), Trigger::Level, pl011uart_irq_handler);
 }

@@ -20,13 +20,13 @@ define QEMU_ARGS_RUN
 		-smp 2 \
 		-m 128M \
 		-cpu cortex-a72 \
-		-machine virt,gic-version=2 \
+		-machine virt,gic-version=2,acpi=off \
 		-chardev stdio,id=ttys0,signal=on \
 		-serial chardev:ttys0 \
 		-d in_asm,mmu -D ./qemu.log \
 		-monitor tcp::1122,server,nowait, \
-		-device qemu-xhci,id=xhci \
-       		-device usb-kbd,bus=xhci.0 \
+		-device virtio-blk-pci,drive=hd0 \
+		-drive if=none,file=hd.img,format=raw,id=hd0 \
 		-nographic \
 		-kernel $(OUT_DIR)/$(TARGET).bin
 endef
@@ -40,17 +40,20 @@ $(KERNEL_BINARY): kernel
 	@echo Build $@
 	@rust-objcopy --binary-architecture=aarch64 --strip-debug -O binary $(OUT_DIR)/$(TARGET) $(OUT_DIR)/$(TARGET).bin
 
-run: $(KERNEL_BINARY)
+hd.img:
+	@dd if=/dev/zero of=hd.img bs=1M count=128 > /dev/null 2>&1
+	@mkfs.fat -F 32 hd.img > /dev/null 2>&1
+run: $(KERNEL_BINARY) hd.img
 	@$(QEMU) $(QEMU_ARGS_RUN)
 
 
 
-debug: kernel
+debug: kernel hd.img
 	@/usr/bin/xfce4-terminal -e '$(QEMU) $(QEMU_ARGS_RUN) -s -S'
 	#@rust-lldb -O "target create $(OUT_DIR)/$(TARGET)" -O "gdb-remote localhost:1234"
 	@RUST_GDB=aarch64-linux-gnu-gdb $(GDB)  $(OUT_DIR)/$(TARGET)  -ex "target remote :1234"
 
-dump_dts:
+dump_dts: hd.img
 	@$(QEMU) $(QEMU_ARGS_RUN) -machine dumpdtb=arm64-virt.dtb $(NO_OUTPUT)
 	@dtc -O dts -o ./arm64-virt.dts  ./arm64-virt.dtb $(NO_OUTPUT)
 	@rm ./arm64-virt.dtb -f

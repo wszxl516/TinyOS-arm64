@@ -10,7 +10,7 @@ macro_rules! read_raw {
                 let mut reg: $width;
                 unsafe {
                     core::arch::asm!(concat!($asm_instr, " {reg:", $asm_width, "}, ", stringify!($asm_reg_name)),
-                    reg = out(reg) reg);
+                    reg = out(reg) reg, options(nomem, nostack));
                 }
                 reg
         }
@@ -26,7 +26,7 @@ macro_rules! write_raw {
         // Writes raw bits to the CPU register.
         unsafe {
             core::arch::asm!(concat!($asm_instr, " ", stringify!($asm_reg_name), ", {reg:", $asm_width, "}"),
-            reg = in(reg) $asm_value, options(readonly))
+            reg = in(reg) $asm_value, options(nomem, nostack))
         }
 
     }

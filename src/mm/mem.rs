@@ -1,10 +1,15 @@
-use crate::config::{GICD_BASE, GIC_SIZE, MEM_SIZE, UART_ADDRESS};
-use crate::mm::{PTEFlags, PageTable, PhyAddr, VirtAddr, PAGE_SIZE};
-use crate::{lds_address, reg_write_p};
 use lazy_static::lazy_static;
-use crate::mm::flush::{dsb_all, isb_all, tlb_all};
-use super::super::common::sync::{Mutex};
+
+use crate::{lds_address, reg_write_p};
 use crate::{pr_address, pr_delimiter, pr_notice};
+use crate::config::{
+    GICC_BASE, GICC_SIZE, GICD_BASE, GICD_SIZE, MEM_SIZE, PCIE_CONFIG_SPACE_START,
+    PCIE_MEM_64_START, UART_ADDRESS,
+};
+use crate::mm::{PAGE_SIZE, PageTable, PhyAddr, PTEFlags, VirtAddr};
+use crate::mm::flush::{dsb_all, isb_all, tlb_all};
+
+use super::super::common::sync::Mutex;
 
 lazy_static! {
     #[link_section = ".data.kernel_root"]
@@ -14,17 +19,37 @@ lazy_static! {
         Mutex::new(k)
     };
 }
-pub fn map_area(va_start: VirtAddr, pa_start: PhyAddr, size: usize, flags: PTEFlags, _name: &str) {
+pub fn map_area(va_start: VirtAddr, pa_start: PhyAddr, size: usize, flags: PTEFlags, name: &str) {
     pr_delimiter!();
-    pr_address!(_name, va_start, size, flags);
+    pr_address!(name, va_start, size, flags);
     match KERNEL_SPACE.lock() {
-        mut lock => {
-            lock.map_area(va_start, pa_start, size, flags, true)
-        }
+        mut lock => lock.map_area(va_start, pa_start, size, flags, true),
     }
 }
+
 pub fn init_kernel_space() {
     pr_notice!("{: ^56} \r\n", "Init Kernel page table");
+    match KERNEL_SPACE.lock() {
+        mut lock => {
+            pr_delimiter!();
+            pr_address!("pcie", VirtAddr::from_phy(PCIE_CONFIG_SPACE_START), PAGE_SIZE * 0x200, PTEFlags::RW | PTEFlags::D);
+            //pcie config space
+            lock.map_block_2m(
+                VirtAddr::from_phy(PCIE_CONFIG_SPACE_START),
+                PhyAddr::new(PCIE_CONFIG_SPACE_START),
+                PTEFlags::RW | PTEFlags::D,
+                true,
+            );
+            pr_address!("", VirtAddr::from_phy(PCIE_MEM_64_START), PAGE_SIZE * 0x200, PTEFlags::RW | PTEFlags::D);
+            //pcie mem64
+            lock.map_block_2m(
+                VirtAddr::from_phy(PCIE_MEM_64_START),
+                PhyAddr::new(PCIE_MEM_64_START),
+                PTEFlags::RW | PTEFlags::D,
+                true,
+            );
+        }
+    }
     //uart
     let (start, size) = (UART_ADDRESS, PAGE_SIZE);
     map_area(
@@ -34,15 +59,25 @@ pub fn init_kernel_space() {
         PTEFlags::RW | PTEFlags::D,
         "uart",
     );
-    //gic
-    let (start, size) = (GICD_BASE, GIC_SIZE * 2);
+    //gicd
+    let (start, size) = (GICD_BASE, GICD_SIZE);
     map_area(
         VirtAddr::from_phy(start),
         PhyAddr::new(start),
         size,
         PTEFlags::RW | PTEFlags::D,
-        "gic",
+        "gicd",
     );
+    //gicc
+    let (start, size) = (GICC_BASE, GICC_SIZE);
+    map_area(
+        VirtAddr::from_phy(start),
+        PhyAddr::new(start),
+        size,
+        PTEFlags::RW | PTEFlags::D,
+        "gicc",
+    );
+
     //text
     let (start, size) = (
         lds_address!(text_start),
@@ -136,7 +171,6 @@ pub fn init_kernel_space() {
     enable_table(page_table_root.as_usize(), true);
     enable_table(0, false);
 }
-
 
 #[no_mangle]
 pub fn enable_table(page_table_root: usize, is_kernel: bool) {

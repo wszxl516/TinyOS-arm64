@@ -1,13 +1,12 @@
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
 
-use crate::config::MEM_SIZE;
 use linked_list_allocator::Heap;
 
-use crate::common::sync::SpinNoIrqLock;
+use crate::common::sync::MutexNoIrq;
+use crate::config::MEM_SIZE;
 use crate::lds_address;
-use crate::mm::{VirtAddr, PAGE_SIZE};
-
+use crate::mm::{PAGE_SIZE, VirtAddr};
 
 #[alloc_error_handler]
 pub fn handle_alloc_error(layout: Layout) -> ! {
@@ -16,7 +15,9 @@ pub fn handle_alloc_error(layout: Layout) -> ! {
 
 #[global_allocator]
 pub static ALLOCATOR: LockedHeap = LockedHeap::empty();
-pub struct LockedHeap(SpinNoIrqLock<Heap>);
+
+pub struct LockedHeap(MutexNoIrq<Heap>);
+
 unsafe impl GlobalAlloc for LockedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.0
@@ -32,15 +33,16 @@ unsafe impl GlobalAlloc for LockedHeap {
             .deallocate(NonNull::new_unchecked(ptr), layout)
     }
 }
+
 impl LockedHeap {
     pub const fn empty() -> Self {
-        Self(SpinNoIrqLock::new(Heap::empty()))
+        Self(MutexNoIrq::new_no_irq(Heap::empty()))
     }
     pub fn init(&self, start: usize, end: usize) {
         unsafe { self.0.lock().init(start as *mut u8, end) };
     }
     #[allow(unused)]
-    pub fn get(&self) -> &SpinNoIrqLock<Heap> {
+    pub fn get(&self) -> &MutexNoIrq<Heap> {
         &self.0
     }
 }

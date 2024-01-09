@@ -39,12 +39,6 @@ macro_rules! pr_address {
 }
 
 #[macro_export]
-macro_rules! get_keys {
-    () => {
-        $crate::device::console::gets()
-    };
-}
-#[macro_export]
 macro_rules! print {
     () => {};
     ($fmt: literal $(, $($arg: tt)+)?) => {
