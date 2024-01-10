@@ -2,7 +2,6 @@ use core::arch::global_asm;
 
 use crate::{get_bit, pr_err, println, reg_read_p};
 use crate::arch::{ack_irq, fetch_handler, fetch_irq};
-use crate::arch::reg::DAIF;
 use crate::arch::trap::syscall::syscall;
 
 use super::context::Context;
@@ -19,8 +18,6 @@ fn invalid_exception(frame: &Context) {
 
 #[no_mangle]
 fn sync_exception(frame: &Context) -> isize {
-    DAIF::All.disable();
-
     let ec = SyncException::new();
     match ec.ec {
         SyncExceptionType::UnknownReason => {}
@@ -35,10 +32,12 @@ fn sync_exception(frame: &Context) -> isize {
         SyncExceptionType::TrappedMSROrMRSAArch64 => {}
         SyncExceptionType::ExceptionPointerAuthentication => {}
         SyncExceptionType::InstructionAbortLowLevel => {
-            pr_err!("Instruction Abort LowLevel: PC at {:#018x}\n", frame.elr);
+            pr_err!("Instruction Abort LowLevel: PC at {:#018x} iss: {:#x}\n", frame.elr, ec.iss);
+            pr_err!("{}\n", frame);
+            return 0;
         }
         SyncExceptionType::InstructionAbortCurrentLevel => {
-            pr_err!("instruction abort: PC at {:#018x}\n", frame.elr);
+            pr_err!("instruction abort: PC at {:#018x} {:#x}\n", frame.elr, ec.iss);
         }
         SyncExceptionType::PCAlignmentFault => {}
         SyncExceptionType::DataAbortLowLevel => {
@@ -54,6 +53,8 @@ fn sync_exception(frame: &Context) -> isize {
                 far,
                 ec.iss,
             );
+            pr_err!("{}\n", frame);
+            return 0;
         }
         SyncExceptionType::DataAbortCurrentLevel => {
             let far = reg_read_p!(far_el1);
@@ -81,7 +82,6 @@ fn sync_exception(frame: &Context) -> isize {
     }
     pr_err!("{}\n", frame);
     frame.stacktrace();
-    DAIF::All.enable();
     panic!()
 }
 

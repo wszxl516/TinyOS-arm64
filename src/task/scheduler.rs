@@ -1,8 +1,8 @@
-use crate::arch::reg::{DAIF, wfi};
+use crate::arch::reg::{DAIF};
 use crate::common::queue::Queue;
-use crate::pr_notice;
+use crate::mm::enable_table;
 use crate::task::context::{switch_context, TaskContext};
-use crate::task::task::{Task, TaskFn};
+use crate::task::task::{Task};
 
 static mut SCHEDULER: Scheduler = Scheduler::new();
 
@@ -42,14 +42,21 @@ impl Scheduler {
         //start first task
         if !self.state.is_running() {
             self.state = State::Running;
-            unsafe { switch_context(0 as *mut TaskContext, &mut (*current).ctx) }
+
+            unsafe {
+                enable_table((*current).ctx.ttbr0_el1, false);
+                switch_context(0 as *mut TaskContext, &mut (*current).ctx)
+            }
         }
         //switch task
         else {
             match self.next() {
                 Some(next) => {
                     if next != current {
-                        unsafe { switch_context(&mut (*current).ctx, &(*next).ctx) }
+                        unsafe {
+                            enable_table((*next).ctx.ttbr0_el1, false);
+                            switch_context(&mut (*current).ctx, &(*next).ctx)
+                        }
                     }
                 }
                 None => {}
@@ -68,8 +75,8 @@ impl Scheduler {
             }
         };
     }
-    pub fn add_task(&mut self, name: &'static str, func: TaskFn, arg: usize) {
-        self.queue.push_front(Task::new_kernel(name, func, arg));
+    pub fn add_task(&mut self, task: Task) {
+        self.queue.push_front(task);
     }
     pub fn idle(&mut self) -> Option<*mut Task> {
         match &mut self.idle {
@@ -98,26 +105,8 @@ impl Scheduler {
 #[inline(always)]
 pub fn init() {
     unsafe { SCHEDULER.init() }
-    add_task(
-        "task1: {}",
-        |_| loop {
-            for i in 0..10 {
-                pr_notice!("Task1: {}\n", i);
-                wfi();
-            }
-        },
-        0,
-    );
-    add_task(
-        "task2: {}",
-        |_| loop {
-            for i in 0..10 {
-                pr_notice!("Task2: {}\n", i);
-                wfi()
-            }
-        },
-        0,
-    );
+    add_task(Task::init());
+
 }
 
 #[inline(always)]
@@ -126,8 +115,8 @@ pub fn yield_current() {
 }
 
 #[inline(always)]
-pub fn add_task(name: &'static str, func: TaskFn, arg: usize) {
-    unsafe { SCHEDULER.add_task(name, func, arg) }
+pub fn add_task(task: Task) {
+    unsafe { SCHEDULER.add_task(task) }
 }
 
 #[inline(always)]

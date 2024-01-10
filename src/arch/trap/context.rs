@@ -39,6 +39,16 @@ impl Display for Context {
 }
 
 impl Context {
+    pub fn new_user(entry: usize, stack_top: usize) -> Self {
+        Self {
+            reg: [0;29],
+            fp: 0,
+            lr: 0,
+            usp: stack_top,
+            elr: entry,
+            spsr: (1 << 9) | (1 << 8) | (0 << 7) | (1 << 6) | 0b0000,
+        }
+    }
     pub unsafe fn exec(&self, stack_top: usize) -> ! {
         asm!("
             mov     sp, x1

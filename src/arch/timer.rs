@@ -4,7 +4,6 @@ use crate::{reg_read_p, reg_update_p, reg_write_p};
 use crate::arch::{IntId, setup_irq, Trigger};
 use crate::common::sync::RwLock;
 use crate::config::TIMER_IRQ;
-use crate::task::scheduler;
 
 lazy_static! {
     static ref TIMER: RwLock<Timer> = RwLock::new(Timer::new());
@@ -41,7 +40,6 @@ impl Timer {
 
 fn timer_irq_handler(_irq: IntId) -> i32 {
     reg_write_p!(CNTP_TVAL_EL0, TIMER.read().ms_ticks * 100);
-    scheduler::yield_current();
     0
 }
 

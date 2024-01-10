@@ -2,6 +2,7 @@ pub use address::{PhyAddr, VirtAddr};
 pub use attr::PTEFlags;
 pub use entry::PTE;
 pub use page::PageTable;
+pub use mem::enable_table;
 
 mod address;
 pub mod heap;

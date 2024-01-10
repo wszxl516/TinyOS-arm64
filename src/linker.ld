@@ -54,7 +54,7 @@ SECTIONS
         . += 200k;
         __symbols_end = .;
     }:RO_DATA
-    
+
     .heap : ALIGN(4k)
     {
         __heap_start = .;

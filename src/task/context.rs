@@ -3,6 +3,7 @@ use core::arch::asm;
 
 use crate::arch::reg::DAIF;
 use crate::arch::trap::context::Context;
+use crate::mm::PhyAddr;
 use crate::task::scheduler::current;
 use crate::task::task::TaskFn;
 
@@ -59,6 +60,15 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
+    pub const fn default() -> Self {
+        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    }
+
+    pub fn init(&mut self, entry: usize, stack_top: usize, page_table_root: PhyAddr) {
+        self.sp = stack_top;
+        self.lr = entry ;
+        self.ttbr0_el1 = page_table_root.as_usize();
+    }
     pub fn new(stack: usize) -> Self {
         Self {
             lr: task_entry as usize,
@@ -81,12 +91,13 @@ impl TaskContext {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum Entry {
     Kernel { pc: usize, arg: usize },
     User(Box<Context>),
 }
 
-fn task_entry() -> ! {
+pub fn task_entry() -> ! {
     DAIF::Irq.enable();
     match current() {
         None => { panic!("no current!") }

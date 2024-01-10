@@ -8,10 +8,10 @@ use super::{BLOCK_2M, PAGE_SIZE};
 pub const PA_1TB_BITS: usize = 40;
 
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhyAddr(usize);
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtAddr(usize);
 
 
@@ -67,6 +67,8 @@ impl VirtAddr {
     pub const PAGE_L1_OFFSET: usize = 9 * 1 + Self::PAGE_DIR_OFFSET;
     pub const PAGE_L2_OFFSET: usize = 9 * 2 + Self::PAGE_DIR_OFFSET;
     pub const PAGE_L3_OFFSET: usize = 9 * 3 + Self::PAGE_DIR_OFFSET;
+    pub const  USER_STACK_START: usize = 0x80000000;
+    pub const USER_START: usize = 0x00400000;
     pub const fn new(va: usize) -> Self {
         let top_bits = va >> VA_MAX_BITS;
         if top_bits != 0 && top_bits != 0xffff {

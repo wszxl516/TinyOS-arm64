@@ -7,3 +7,6 @@
 /qemu.log
 /hd.img
 /log.txt
+/user/os.map
+/user/target
+/init.bin

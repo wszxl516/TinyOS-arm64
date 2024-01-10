@@ -15,6 +15,7 @@ pub const PHYS_VIRT_OFFSET: usize = KERNEL_START;
 pub const VA_MAX_BITS: usize = 48;
 pub const PAGE_ENTRY_COUNT: usize = 512;
 
+#[derive(Default, Copy, Clone, Debug)]
 pub struct PageTable {
     root_addr: PhyAddr,
 }
@@ -24,7 +25,7 @@ impl PageTable {
     pub const L1: usize = 1;
     pub const L2: usize = 2;
     pub const L3: usize = 3;
-    pub const fn new() -> Self {
+    pub const fn empty() -> Self {
         Self {
             root_addr: PhyAddr::new(0),
         }

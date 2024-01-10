@@ -1,6 +1,6 @@
 use alloc::format;
 
-#[link_section = ".device"]
+#[link_section = ".rodata"]
 static DEVICE_TYPE: [(u8, &str, [(u8, &str); 1]); 5] = [
     (0x1, "Mass Storage Controller", [(0x0, "SCSI Bus Controller")]),
     (0x2, "Network Controller", [(0x0, "Ethernet Controller")]),
@@ -9,7 +9,7 @@ static DEVICE_TYPE: [(u8, &str, [(u8, &str); 1]); 5] = [
     (0xC, "Serial Bus Controller", [(0x3, "USB Controller")])
 ];
 ///usr/share/hwdata/pci.ids
-#[link_section = ".device"]
+#[link_section = ".rodata"]
 static PCI_IDS: &str = r#"
 1af4    Red Hat, Inc.
     1000    Virtio network device

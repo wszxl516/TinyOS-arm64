@@ -14,7 +14,7 @@ use super::super::common::sync::Mutex;
 lazy_static! {
     #[link_section = ".data.kernel_root"]
     static ref KERNEL_SPACE: Mutex<PageTable> = {
-        let mut k = PageTable::new();
+        let mut k = PageTable::empty();
         k.init();
         Mutex::new(k)
     };
