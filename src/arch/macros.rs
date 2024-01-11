@@ -97,13 +97,13 @@ macro_rules! reg_write_a {
 #[macro_export]
 macro_rules! get_bits {
     ($value: expr, $start:expr, $num_bits:expr) => {
-        ($value >> $start) & ((1 << ($num_bits + 1)) - 1)
+        ($value >> $start) & ((1 << ($num_bits)) - 1)
     };
 }
 
 #[macro_export]
 macro_rules! get_bit {
     ($value: expr, $num_bits:expr) => {
-        $value  & (1 << $num_bits)
+        ($value  & (1 << $num_bits)) >> $num_bits
     };
 }

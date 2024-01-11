@@ -3,21 +3,21 @@
 
 extern crate std;
 
-use std::{println, read_key, shutdown};
-
+use std::{pr_notice, pr_info, read_key, shutdown, sleep_ms};
 
 #[no_mangle]
 pub fn main() -> ! {
+    pr_info!("Ctrl-q to shutdown\n");
     loop {
         let key = read_key!();
-        match key {
+        match key as u8 {
             0x11 => {
-                println!("shutdown");
+                pr_notice!("shutdown\n");
                 shutdown()
             },
             0 => {}
-            _ => println!("{:#x}", key),
+            _ => pr_notice!("{}\n", key),
         }
-
+        sleep_ms(10);
     }
 }

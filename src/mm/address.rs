@@ -67,8 +67,6 @@ impl VirtAddr {
     pub const PAGE_L1_OFFSET: usize = 9 * 1 + Self::PAGE_DIR_OFFSET;
     pub const PAGE_L2_OFFSET: usize = 9 * 2 + Self::PAGE_DIR_OFFSET;
     pub const PAGE_L3_OFFSET: usize = 9 * 3 + Self::PAGE_DIR_OFFSET;
-    pub const  USER_STACK_START: usize = 0x80000000;
-    pub const USER_START: usize = 0x00400000;
     pub const fn new(va: usize) -> Self {
         let top_bits = va >> VA_MAX_BITS;
         if top_bits != 0 && top_bits != 0xffff {
@@ -106,6 +104,11 @@ impl VirtAddr {
             2 => (self.0 >> Self::PAGE_L2_OFFSET) & (PAGE_ENTRY_COUNT - 1),
             3 => (self.0 >> Self::PAGE_L3_OFFSET) & (PAGE_ENTRY_COUNT - 1),
             _ => unreachable!()
+        }
+    }
+    pub fn copy_from(&self, data: &[u8]){
+        unsafe {
+            core::slice::from_raw_parts_mut(self.as_mut_ptr(), data.len()).copy_from_slice(data)
         }
     }
 }

@@ -105,8 +105,6 @@ impl Scheduler {
 #[inline(always)]
 pub fn init() {
     unsafe { SCHEDULER.init() }
-    add_task(Task::init());
-
 }
 
 #[inline(always)]

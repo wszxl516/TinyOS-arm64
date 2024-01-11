@@ -1,8 +1,8 @@
 use core::arch::asm;
 use core::fmt::{Display, Formatter};
 
-use crate::{pr_err, reg_read_a};
 use crate::common::symbol::find_symbol;
+use crate::{pr_err, reg_read_a};
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -30,9 +30,14 @@ impl Display for Context {
                 i + 3,
                 self.reg[i + 3]
             )
-                .unwrap();
+            .unwrap();
         }
-        write!(f, "x28  {:#018x} fp   {:#018x} lr   {:#018x} usp  {:#018x}\n", self.reg[28], self.fp, self.lr, self.usp).unwrap();
+        write!(
+            f,
+            "x28  {:#018x} fp   {:#018x} lr   {:#018x} usp  {:#018x}\n",
+            self.reg[28], self.fp, self.lr, self.usp
+        )
+        .unwrap();
         write!(f, "elr  {:#018x} spsr {:#018x}\n", self.elr, self.spsr).unwrap();
         Ok(())
     }
@@ -41,7 +46,7 @@ impl Display for Context {
 impl Context {
     pub fn new_user(entry: usize, stack_top: usize) -> Self {
         Self {
-            reg: [0;29],
+            reg: [0; 29],
             fp: 0,
             lr: 0,
             usp: stack_top,
@@ -94,9 +99,13 @@ impl Context {
             match find_symbol(frame_pc) {
                 None => {}
                 Some(sym) => {
-                    pr_err!(" {}+{:#x}\n", sym.name, frame_pc - sym.addr);
+                    match frame_pc >= sym.addr{
+                        true =>   pr_err!(" {}+{:#x}", sym.name, frame_pc - sym.addr),
+                        false => break
+                    }
                 }
             }
+            pr_err!("\n");
             /* Stack frame pointer should be 16 bytes aligned */
             if frame_fp & 0xF != 0 {
                 break;

@@ -10,64 +10,69 @@ use super::types::{SyncException, SyncExceptionType};
 global_asm!(include_str!("../macros.S"), include_str!("trap.S"));
 
 #[no_mangle]
-fn invalid_exception(frame: &Context) {
-    pr_err!("{}\n", frame);
-    frame.stacktrace();
+fn invalid_exception(context: &Context) {
+    pr_err!("{}\n", context);
+    context.stacktrace();
     panic!()
 }
 
 #[no_mangle]
-fn sync_exception(frame: &Context) -> isize {
+fn sync_exception(context: &mut Context){
     let ec = SyncException::new();
+    let far = reg_read_p!(far_el1);
     match ec.ec {
         SyncExceptionType::UnknownReason => {}
-        SyncExceptionType::TrappedWFIorWFE => {}
+        SyncExceptionType::TrappedWFIorWFE => {
+            pr_err!("{:?}\n", ec.ec);
+        }
         SyncExceptionType::TrappedSimdOrFloatingPoint => {
-            return 0;
         }
         SyncExceptionType::IllegalExecutionState => {}
         SyncExceptionType::SVCAArch64 => {
-            return syscall(&frame);
+            syscall(context);
+            return;
         }
         SyncExceptionType::TrappedMSROrMRSAArch64 => {}
         SyncExceptionType::ExceptionPointerAuthentication => {}
         SyncExceptionType::InstructionAbortLowLevel => {
-            pr_err!("Instruction Abort LowLevel: PC at {:#018x} iss: {:#x}\n", frame.elr, ec.iss);
-            pr_err!("{}\n", frame);
-            return 0;
+            pr_err!("Instruction Abort LowLevel: PC at {:#018x} iss: {:#x} {}\n", context.elr, ec.iss,  ec.fault_msg());
+            pr_err!("{}\n", context);
+            return;
+
         }
         SyncExceptionType::InstructionAbortCurrentLevel => {
-            pr_err!("instruction abort: PC at {:#018x} {:#x}\n", frame.elr, ec.iss);
+            pr_err!("instruction abort: PC at {:#018x} {:#x} {}\n", context.elr, ec.iss, ec.fault_msg());
+
         }
         SyncExceptionType::PCAlignmentFault => {}
         SyncExceptionType::DataAbortLowLevel => {
-            let far = reg_read_p!(far_el1);
             pr_err!(
-                "{}: {} access LowLevel from PC {:#018x}, FAR {:#018x}, iss {:#018x}\n",
+                "{}: {} access LowLevel from PC {:#018x}, FAR {:#018x}, iss {:#018x} {}\n",
                 ec,
                 match get_bit!(ec.iss, 6) {
                     1 => "Write",
                     _ => "Read",
                 },
-                frame.elr,
+                context.elr,
                 far,
                 ec.iss,
+                ec.fault_msg()
             );
-            pr_err!("{}\n", frame);
-            return 0;
+            pr_err!("{}\n", context);
+            return;
         }
         SyncExceptionType::DataAbortCurrentLevel => {
-            let far = reg_read_p!(far_el1);
             pr_err!(
-                "{}: {} access from PC {:#018x}, FAR {:#018x}, iss {:#018x}\n",
+                "{}: {} access from PC {:#018x}, FAR {:#018x}, iss {:#018x} {}\n",
                 ec,
                 match get_bit!(ec.iss, 6) {
                     1 => "Write",
                     _ => "Read",
                 },
-                frame.elr,
+                context.elr,
                 far,
                 ec.iss,
+                ec.fault_msg()
             );
         }
         SyncExceptionType::SPAlignmentFault => {}
@@ -80,8 +85,8 @@ fn sync_exception(frame: &Context) -> isize {
         SyncExceptionType::WatchpointCurrentLevel => {}
         SyncExceptionType::BRKInstructionAArch64 => {}
     }
-    pr_err!("{}\n", frame);
-    frame.stacktrace();
+    pr_err!("{}\n", context);
+    context.stacktrace();
     panic!()
 }
 

@@ -69,15 +69,16 @@ pub fn find_symbol(addr: usize) -> Option<Symbol> {
     let entry_num = SYMBOL_HEADER.symbol_num();
     let mut symbols = unsafe { core::slice::from_raw_parts(symbol_start, symbol_size) };
     let mut used_len = 0;
-    let mut symbol = Symbol {
-        name: "",
-        addr: 0,
-        size: 0,
-    };
+
     if SYMBOL_HEADER.magic != MAGIC {
         panic!("invalid Symbol header.");
     }
     for _n in 0..entry_num {
+        let mut symbol = Symbol {
+            name: "",
+            addr: 0,
+            size: 0,
+        };
         (symbol.addr, symbols) = get_int!(symbols, usize);
         (symbol.size, symbols) = get_int!(symbols, usize);
         (symbol.name, symbols) = get_str!(symbols);
@@ -89,5 +90,5 @@ pub fn find_symbol(addr: usize) -> Option<Symbol> {
             break;
         }
     }
-    return Some(symbol);
+    return None;
 }

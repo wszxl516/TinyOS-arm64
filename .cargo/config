@@ -5,7 +5,7 @@ target = "aarch64-unknown-none"
 rustflags = [
     "-Clink-arg=-Tsrc/linker.ld",
     "-Ctarget-feature=+neon",
-    "-Clink-arg=--Map=os.map",
+    "-Clink-arg=--Map=memory.map",
     "-Ctarget-cpu=cortex-a72",
     "-Cforce-frame-pointers=yes"
 ]
@@ -13,4 +13,3 @@ rustflags = [
 [unstable]
 mtime-on-use = true
 build-std = ["core", "alloc"]
-

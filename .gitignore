@@ -1,12 +1,12 @@
 /target
 /symbols.log
-/os.map
+/memory.map
 /.gdb_history
 /arm64-virt.dts
 /.idea
 /qemu.log
 /hd.img
 /log.txt
-/user/os.map
+/user/memory.map
 /user/target
 /init.bin

@@ -31,8 +31,7 @@ fn kernel_main() -> ! {
     devices::init();
     #[cfg(feature = "test")]
     test::test_abort();
-    task::scheduler::init();
-    task::scheduler::yield_current();
+    task::init();
     arch::reg::DAIF::Irq.enable();
     loop {}
 }

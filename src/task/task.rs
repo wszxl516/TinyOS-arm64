@@ -4,18 +4,18 @@ use core::sync::atomic::{AtomicU32, Ordering};
 
 use crate::arch::reg::wfi;
 use crate::arch::trap::context::Context;
-use crate::mm::{PAGE_SIZE, PageTable, PTEFlags, VirtAddr};
-use crate::mm::heap::page_alloc;
-use crate::{align_up, pr_info};
+use crate::mm::{PAGE_SIZE};
+use crate::{pr_info};
 use crate::mm::flush::{dsb_all, isb_all};
 use crate::task::context::{Entry, task_entry, TaskContext};
-pub const USR_STACK_SIZE: usize = PAGE_SIZE * 4;
+use crate::task::mem::UserSpace;
+
 pub type TaskFn = fn(usize) -> !;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u32);
 #[link_section = ".rodata"]
-static BIN_INIT: &[u8] = include_bytes!("../../init.bin");
+static BIN_INIT: &[u8] = include_bytes!(env!("INIT_BIN"));
 
 impl TaskId {
     const IDLE_TASK_ID: Self = Self(0);
@@ -43,7 +43,7 @@ pub struct Task {
     pub entry: Entry,
     pub k_stack: Stack<PAGE_SIZE>,
     pub pid: TaskId,
-    pub page: PageTable,
+    pub page: UserSpace,
 }
 
 impl Task {
@@ -64,41 +64,32 @@ impl Task {
             },
             k_stack: stack,
             pid: id,
-            page: PageTable::empty(),
+            page: UserSpace::empty(),
         }
     }
     pub fn idle() -> Self {
         Self::new_kernel("idle", Self::idle_task, 0, TaskId::IDLE_TASK_ID)
     }
-    pub fn init() -> Self {
-        let mut vm = PageTable::empty();
-        vm.init();
-        let bin_size = align_up!(BIN_INIT.len(), PAGE_SIZE);
-        let text_addr = page_alloc(bin_size / PAGE_SIZE);
-        unsafe {
-            core::slice::from_raw_parts_mut(text_addr.as_mut_ptr(), BIN_INIT.len()).copy_from_slice(BIN_INIT)
-        }
-
-        let text_start = VirtAddr::new(VirtAddr::USER_START);
-        vm.map_area(text_start, text_addr.as_phy(), bin_size, PTEFlags::RX | PTEFlags::U, true);
-        let stack_addr = page_alloc(USR_STACK_SIZE / PAGE_SIZE);
-        let stack_start = VirtAddr::new(VirtAddr::USER_STACK_START);
-        vm.map_area(stack_start, stack_addr.as_phy(), USR_STACK_SIZE, PTEFlags::RW | PTEFlags::U, true);
-
-        let (entry, stack_top) = (text_start.as_usize(), stack_start.as_usize() + USR_STACK_SIZE);
-
+    pub fn new_user(name: &'static str, data: &[u8]) -> Self {
+        let mut vm = UserSpace::new();
+        let (entry, stack_top) = vm.load_bin(data);
+        let ttbr0_el1 = vm.root_phy_addr();
         let mut t = Task{
-            name: "init",
+            name,
             ctx: TaskContext::default(),
             entry: Entry::User(Box::new(Context::new_user(entry, stack_top))),
             k_stack: Stack::new(),
             pid: TaskId::alloc(),
             page: vm,
         };
-        t.ctx.init(task_entry as usize, t.k_stack.top(), vm.root_phy_addr());
+        t.ctx.init(task_entry as usize, t.k_stack.top(), ttbr0_el1);
         isb_all();
         dsb_all();
         t
+    }
+    #[inline(always)]
+    pub fn init() -> Self {
+        Self::new_user("init", BIN_INIT)
     }
 
     #[allow(dead_code)]
