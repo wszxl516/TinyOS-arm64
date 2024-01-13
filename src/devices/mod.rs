@@ -8,8 +8,8 @@ pub use console::{gets, puts};
 
 use crate::arch::BOOT_ARGS;
 use crate::common::sync::Mutex;
-use crate::devices::pci::bus::PCIBus;
 use crate::devices::{virtio::blk::VirtIOBlk, virtio::VirtioBlkTrans};
+use crate::devices::pci::bus::PCIBus;
 use crate::pr_notice;
 
 mod console;

@@ -37,8 +37,10 @@ pub fn psci_cpu_on(id: u32, entry: usize) -> i32 {
     psci_call(CPU_ON, id, entry as u32, id)
 }
 
-pub fn psci_cpu_rest() -> i32 {
-    psci_call(CPU_RESET, 0, 0, 0)
+pub fn psci_cpu_rest() -> ! {
+    psci_call(CPU_RESET, 0, 0, 0);
+    loop {}
+
 }
 
 pub fn psci_cpu_suspend() -> i32 {

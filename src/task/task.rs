@@ -1,100 +1,112 @@
-use alloc::boxed::Box;
+use alloc::string::{String, ToString};
 use core::fmt;
-use core::sync::atomic::{AtomicU32, Ordering};
+use core::fmt::{Display, Formatter};
 
 use crate::arch::reg::wfi;
-use crate::arch::trap::context::Context;
-use crate::mm::{PAGE_SIZE};
-use crate::{pr_info};
+use crate::mm::{PAGE_SIZE, PhyAddr};
 use crate::mm::flush::{dsb_all, isb_all};
-use crate::task::context::{Entry, task_entry, TaskContext};
+use crate::task::context::{TaskContext, TaskEntry};
 use crate::task::mem::UserSpace;
+use crate::task::scheduler;
+use super::types::{KernelStack, TaskId, TaskState};
 
-pub type TaskFn = fn(usize) -> !;
+pub const KERNEL_STACK_SIZE: usize= PAGE_SIZE * 4;
+pub type TaskFn = fn(usize) -> isize;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct TaskId(u32);
+
 #[link_section = ".rodata"]
 static BIN_INIT: &[u8] = include_bytes!(env!("INIT_BIN"));
 
-impl TaskId {
-    const IDLE_TASK_ID: Self = Self(0);
-
-    pub(crate) fn alloc() -> Self {
-        static NEXT_PID: AtomicU32 = AtomicU32::new(1);
-        Self(NEXT_PID.fetch_add(1, Ordering::AcqRel))
-    }
-    #[allow(dead_code)]
-    pub const fn as_usize(&self) -> u32 {
-        self.0
-    }
-}
-
-impl From<u32> for TaskId {
-    fn from(pid: u32) -> Self {
-        Self(pid)
-    }
-}
 
 #[repr(C)]
 pub struct Task {
-    pub name: &'static str,
+    pub name: String,
+    pub state: TaskState,
     pub ctx: TaskContext,
-    pub entry: Entry,
-    pub k_stack: Stack<PAGE_SIZE>,
+    pub exit_code: isize,
+    pub entry: TaskEntry,
+    pub k_stack: KernelStack<KERNEL_STACK_SIZE>,
     pub pid: TaskId,
     pub page: UserSpace,
 }
+impl Display for Task{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Task:  {{ name: {} pid: {} {} task }}",
+               self.name,
+               self.pid.as_usize(),
+               match self.entry {
+                   TaskEntry::Kernel { .. } => "kernel",
+                   TaskEntry::User(_) => "user"
+               })
+    }
+}
 
 impl Task {
-    fn idle_task(_: usize) ->!{
+    fn idle_task(_: usize) -> isize{
         loop {
-            pr_info!("idle\n");
+            scheduler::yield_current();
             wfi()
         }
     }
-    pub fn new_kernel(name: &'static str, entry: TaskFn, arg: usize, id: TaskId) -> Self {
-        let stack = Stack::<PAGE_SIZE>::new();
+    pub fn new_kernel(name: String,entry: TaskFn, arg: usize, id: TaskId) -> Self {
+        let stack = KernelStack::new();
         Task {
             name,
-            ctx: TaskContext::new(stack.top()),
-            entry: Entry::Kernel {
-                pc: entry as usize,
-                arg,
-            },
+            state: TaskState::Ready,
+            ctx: TaskContext::new(stack.top(), PhyAddr::new(0)),
+            exit_code: 0,
+            entry: TaskEntry::new_kernel(entry as usize, arg),
             k_stack: stack,
             pid: id,
             page: UserSpace::empty(),
         }
     }
     pub fn idle() -> Self {
-        Self::new_kernel("idle", Self::idle_task, 0, TaskId::IDLE_TASK_ID)
+        Self::new_kernel("idle".to_string(),Self::idle_task, 0, TaskId::IDLE_TASK_ID)
     }
-    pub fn new_user(name: &'static str, data: &[u8]) -> Self {
+    pub fn new_user(name: String, data: &[u8]) -> Self {
         let mut vm = UserSpace::new();
         let (entry, stack_top) = vm.load_bin(data);
-        let ttbr0_el1 = vm.root_phy_addr();
-        let mut t = Task{
+        let page_table_root = vm.root_addr();
+        let k_stack =  KernelStack::new();
+        let t = Task{
             name,
-            ctx: TaskContext::default(),
-            entry: Entry::User(Box::new(Context::new_user(entry, stack_top))),
-            k_stack: Stack::new(),
+            state: TaskState::Ready,
+            ctx: TaskContext::new(k_stack.top(), page_table_root),
+            exit_code: 0,
+            entry: TaskEntry::new_user(entry, stack_top),
+            k_stack,
             pid: TaskId::alloc(),
             page: vm,
         };
-        t.ctx.init(task_entry as usize, t.k_stack.top(), ttbr0_el1);
         isb_all();
         dsb_all();
         t
     }
     #[inline(always)]
     pub fn init() -> Self {
-        Self::new_user("init", BIN_INIT)
+        Self::new_user("init".to_string() ,BIN_INIT)
     }
 
     #[allow(dead_code)]
     pub fn pid(&self) -> TaskId {
         self.pid
+    }
+
+    #[inline(always)]
+    pub fn set_ready(&mut self){
+        self.state = TaskState::Ready
+    }
+    #[inline(always)]
+    pub fn set_running(&mut self){
+        self.state = TaskState::Running
+    }
+    #[inline(always)]
+    pub fn set_exited(&mut self){
+        self.state = TaskState::Exited
+    }
+    pub fn exit(&mut self, code: isize){
+        self.exit_code = code
     }
 
     pub fn as_ptr(&mut self) -> *mut Self {
@@ -103,20 +115,9 @@ impl Task {
 }
 
 impl fmt::Debug for Task {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Task").field("pid", &self.pid).finish()
     }
 }
 
-pub struct Stack<const N: usize>(&'static mut [u8; N]);
 
-impl<const N: usize> Stack<N> {
-    pub fn new() -> Self {
-        Self {
-            0: Box::leak(Box::new([0u8; N])),
-        }
-    }
-    pub fn top(&self) -> usize {
-        self.0.as_ptr_range().end as usize
-    }
-}

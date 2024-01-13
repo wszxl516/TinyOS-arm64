@@ -1,8 +1,10 @@
 pub use address::{PhyAddr, VirtAddr};
 pub use attr::PTEFlags;
 pub use entry::PTE;
-pub use page::PageTable;
 pub use mem::enable_table;
+pub use page::PageTable;
+#[allow(unused_imports)]
+pub use user::{UserBuffer, UserPtr};
 
 mod address;
 pub mod heap;
@@ -11,9 +13,15 @@ pub mod flush;
 mod attr;
 mod entry;
 mod mem;
+mod user;
 
 pub const PAGE_SIZE: usize = 0x1000;
 pub const BLOCK_2M: usize = PAGE_SIZE * 0x200;
+pub const USER_START: usize = 0x0000_0000_0000_0000;
+pub const USER_END: usize = 0x0000_FFFF_FFFF_FFFF;
+pub const KERNEL_START: usize = 0xFFFF_0000_0000_0000;
+#[allow(dead_code)]
+pub const KERNEL_END: usize = 0xFFFF_FFFF_FFFF_FFFF;
 #[macro_export]
 macro_rules! align_down {
     ($addr:expr, $page_size:ident) => {

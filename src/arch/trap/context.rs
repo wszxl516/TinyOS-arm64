@@ -1,8 +1,8 @@
 use core::arch::asm;
 use core::fmt::{Display, Formatter};
 
-use crate::common::symbol::find_symbol;
 use crate::{pr_err, reg_read_a};
+use crate::common::symbol::find_symbol;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -98,12 +98,10 @@ impl Context {
             pr_err!("\t#{:#018x}", frame_pc);
             match find_symbol(frame_pc) {
                 None => {}
-                Some(sym) => {
-                    match frame_pc >= sym.addr{
-                        true =>   pr_err!(" {}+{:#x}", sym.name, frame_pc - sym.addr),
-                        false => break
-                    }
-                }
+                Some(sym) => match frame_pc >= sym.addr {
+                    true => pr_err!(" {}+{:#x}", sym.name, frame_pc - sym.addr),
+                    false => break,
+                },
             }
             pr_err!("\n");
             /* Stack frame pointer should be 16 bytes aligned */

@@ -1,8 +1,9 @@
 use core::arch::global_asm;
 
-use crate::{get_bit, pr_err, println, reg_read_p};
-use crate::arch::{ack_irq, fetch_handler, fetch_irq};
+use crate::arch::reg::DAIF;
 use crate::arch::trap::syscall::syscall;
+use crate::arch::{ack_irq, fetch_handler, fetch_irq};
+use crate::{get_bit, pr_err, println, reg_read_p};
 
 use super::context::Context;
 use super::types::{SyncException, SyncExceptionType};
@@ -17,7 +18,8 @@ fn invalid_exception(context: &Context) {
 }
 
 #[no_mangle]
-fn sync_exception(context: &mut Context){
+fn sync_exception(context: &mut Context) {
+    DAIF::All.disable();
     let ec = SyncException::new();
     let far = reg_read_p!(far_el1);
     match ec.ec {
@@ -25,24 +27,43 @@ fn sync_exception(context: &mut Context){
         SyncExceptionType::TrappedWFIorWFE => {
             pr_err!("{:?}\n", ec.ec);
         }
-        SyncExceptionType::TrappedSimdOrFloatingPoint => {
-        }
+        SyncExceptionType::TrappedSimdOrFloatingPoint => {}
         SyncExceptionType::IllegalExecutionState => {}
         SyncExceptionType::SVCAArch64 => {
-            syscall(context);
+            context.reg[0] = syscall(
+                context.reg[8],
+                [
+                    context.reg[0],
+                    context.reg[1],
+                    context.reg[2],
+                    context.reg[3],
+                    context.reg[4],
+                    context.reg[5],
+                ],
+            );
+            DAIF::All.enable();
             return;
         }
         SyncExceptionType::TrappedMSROrMRSAArch64 => {}
         SyncExceptionType::ExceptionPointerAuthentication => {}
         SyncExceptionType::InstructionAbortLowLevel => {
-            pr_err!("Instruction Abort LowLevel: PC at {:#018x} iss: {:#x} {}\n", context.elr, ec.iss,  ec.fault_msg());
+            pr_err!(
+                "Instruction Abort LowLevel: PC at {:#018x} iss: {:#x} {}\n",
+                context.elr,
+                ec.iss,
+                ec.fault_msg()
+            );
             pr_err!("{}\n", context);
+            DAIF::All.enable();
             return;
-
         }
         SyncExceptionType::InstructionAbortCurrentLevel => {
-            pr_err!("instruction abort: PC at {:#018x} {:#x} {}\n", context.elr, ec.iss, ec.fault_msg());
-
+            pr_err!(
+                "instruction abort: PC at {:#018x} {:#x} {}\n",
+                context.elr,
+                ec.iss,
+                ec.fault_msg()
+            );
         }
         SyncExceptionType::PCAlignmentFault => {}
         SyncExceptionType::DataAbortLowLevel => {
@@ -59,6 +80,7 @@ fn sync_exception(context: &mut Context){
                 ec.fault_msg()
             );
             pr_err!("{}\n", context);
+            DAIF::All.enable();
             return;
         }
         SyncExceptionType::DataAbortCurrentLevel => {

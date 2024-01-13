@@ -1,8 +1,8 @@
 use core::fmt::{self, Write};
 
-const STDOUT: usize = 1;
+use super::write;
 
-use super::{write};
+const STDOUT: usize = 1;
 
 struct Stdout;
 
@@ -22,7 +22,7 @@ macro_rules! read_key {
     () => {{
         let mut key: [u8; 1] = [0u8; 1];
         crate::std::read(0, &mut key);
-        key[0] as char
+        key[0]
     }};
 }
 
@@ -56,7 +56,6 @@ impl Color {
 
 #[macro_export]
 macro_rules! print {
-    () => {$crate::console::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) => {
         $crate::stdio::print(format_args!($fmt $(, $($arg)+)?));
     }
@@ -64,7 +63,7 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
-    () => {$crate::console::print(format_args!("\n"))};
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) => {
         $crate::stdio::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
     }
@@ -72,6 +71,7 @@ macro_rules! println {
 
 #[macro_export]
 macro_rules! pr_color {
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal ,$color: expr $(, $($arg: tt)+)?) =>{
         $crate::stdio::print(
             format_args!(concat!("\x1b[{}m", $fmt, "\x1b[0m"),
@@ -83,6 +83,7 @@ macro_rules! pr_color {
 
 #[macro_export]
 macro_rules! pr_info {
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) =>{
         $crate::pr_color!($fmt,
             $crate::stdio::Color::Green.value()
@@ -93,6 +94,7 @@ macro_rules! pr_info {
 
 #[macro_export]
 macro_rules! pr_notice {
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) =>{
         $crate::pr_color!($fmt,
             $crate::stdio::Color::Blue.value()
@@ -103,6 +105,7 @@ macro_rules! pr_notice {
 
 #[macro_export]
 macro_rules! pr_warn {
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) =>{
         $crate::pr_color!($fmt,
             $crate::stdio::Color::Orange.value()
@@ -113,6 +116,7 @@ macro_rules! pr_warn {
 
 #[macro_export]
 macro_rules! pr_err {
+    () => {$crate::stdio::print(format_args!("\n"))};
     ($fmt: literal $(, $($arg: tt)+)?) =>{
        $crate::pr_color!($fmt,
             $crate::stdio::Color::Red.value()

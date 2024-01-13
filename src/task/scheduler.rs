@@ -1,11 +1,19 @@
-use crate::arch::reg::{DAIF};
-use crate::common::queue::Queue;
+use lazy_static::lazy_static;
+
+use crate::arch::reg::{DAIF, set_thread_pointer};
+use crate::common::sync::Mutex;
 use crate::mm::enable_table;
 use crate::task::context::{switch_context, TaskContext};
-use crate::task::task::{Task};
+use crate::task::queue::TaskQueue;
+use super::{task::Task, types::TaskState};
 
-static mut SCHEDULER: Scheduler = Scheduler::new();
-
+lazy_static! {
+    pub static ref SCHEDULER: Mutex<Scheduler> = {
+        let mut s = Scheduler::new();
+        s.init();
+        Mutex::new(s)
+    };
+}
 
 #[derive(PartialEq)]
 pub enum State {
@@ -21,42 +29,48 @@ impl State {
 }
 
 pub struct Scheduler {
-    queue: Queue<Task>,
+    queue: TaskQueue<Task>,
     idle: Option<Task>,
     state: State,
+    current: Option<&'static mut Task>,
 }
 
 impl Scheduler {
     pub const fn new() -> Self {
         Self {
-            queue: Queue::<Task>::new(),
+            queue: TaskQueue::<Task>::new(),
             idle: None,
             state: State::Stopped,
+            current: None,
         }
     }
     pub fn init(&mut self) {
         self.idle.replace(Task::idle());
         self.state = State::Initialized;
     }
-    pub fn switch(&mut self, current: *mut Task) {
+    unsafe fn switch(&mut self, current: *mut Task) {
         //start first task
         if !self.state.is_running() {
             self.state = State::Running;
-
-            unsafe {
+                (*current).state = TaskState::Running;
+                set_thread_pointer(current.addr());
                 enable_table((*current).ctx.ttbr0_el1, false);
                 switch_context(0 as *mut TaskContext, &mut (*current).ctx)
-            }
         }
         //switch task
         else {
             match self.next() {
                 Some(next) => {
+                        self.current.replace(&mut *next);
                     if next != current {
-                        unsafe {
+                            (*next).set_running();
+                            if !(*current).state.is_exited() {
+                                (*current).set_ready()
+                            }
+                            set_thread_pointer(next.addr());
                             enable_table((*next).ctx.ttbr0_el1, false);
                             switch_context(&mut (*current).ctx, &(*next).ctx)
-                        }
+
                     }
                 }
                 None => {}
@@ -70,10 +84,22 @@ impl Scheduler {
             None => {}
             Some(current) => {
                 DAIF::Irq.enable();
-                self.switch(current);
+                unsafe { self.switch(current); }
                 DAIF::Irq.disable();
             }
         };
+    }
+
+    pub fn exit_current(&mut self, exit_code: isize) -> ! {
+        match self.current() {
+            None => {}
+            Some(current) => unsafe {
+                (*current).set_exited();
+                (*current).exit(exit_code)
+            },
+        }
+        self.yield_current();
+        unreachable!();
     }
     pub fn add_task(&mut self, task: Task) {
         self.queue.push_front(task);
@@ -81,43 +107,58 @@ impl Scheduler {
     pub fn idle(&mut self) -> Option<*mut Task> {
         match &mut self.idle {
             None => None,
-            Some(idle) => Some(idle)
+            Some(idle) => Some(idle),
         }
     }
-    #[inline(always)]
     pub fn current(&mut self) -> Option<*mut Task> {
-        match self.queue.head() {
+        match  &mut self.current {
             None => self.idle(),
             Some(current) => Some(current.as_ptr()),
         }
     }
-    #[inline(always)]
     pub fn next(&mut self) -> Option<*mut Task> {
-        match self.queue.next() {
-            None => self.idle(),
-            Some(next) => {
-                Some(next.as_ptr())
+        for _ in 0..self.queue.len {
+            match self.queue.next() {
+                None => return self.idle(),
+                Some(next) => {
+                    if next.state.is_ready() {
+                        return Some(next.as_ptr());
+                    }
+                }
             }
         }
+        self.idle()
     }
 }
 
 #[inline(always)]
-pub fn init() {
-    unsafe { SCHEDULER.init() }
-}
-
-#[inline(always)]
 pub fn yield_current() {
-    unsafe { SCHEDULER.yield_current() }
+    let mut s = SCHEDULER.lock();
+    unsafe {
+        SCHEDULER.force_unlock();
+    }
+    s.get_mut().yield_current();
 }
 
 #[inline(always)]
 pub fn add_task(task: Task) {
-    unsafe { SCHEDULER.add_task(task) }
+    match &mut SCHEDULER.lock() {
+        lock => lock.add_task(task),
+    }
 }
 
 #[inline(always)]
 pub fn current() -> Option<*mut Task> {
-    unsafe { SCHEDULER.current() }
+    match &mut SCHEDULER.lock() {
+        lock => lock.current(),
+    }
+}
+
+#[inline(always)]
+pub fn exit_current(code: isize) -> ! {
+    let mut s = SCHEDULER.lock();
+    unsafe {
+        SCHEDULER.force_unlock();
+    }
+    s.get_mut().exit_current(code);
 }

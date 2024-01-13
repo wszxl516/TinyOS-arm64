@@ -8,20 +8,22 @@ struct Node<T> {
     next: Link<T>,
 }
 
-unsafe impl<T> Sync for Queue<T> {}
+unsafe impl<T> Sync for TaskQueue<T> {}
 
-unsafe impl<T> Send for Queue<T> {}
+unsafe impl<T> Send for TaskQueue<T> {}
 
-pub struct Queue<T> {
+pub struct TaskQueue<T> {
     head: Link<T>,
     tail: *mut Node<T>,
+    pub(crate) len: usize
 }
 
-impl<T> Queue<T> {
+impl<T> TaskQueue<T> {
     pub const fn new() -> Self {
         Self {
             head: None,
             tail: ptr::null_mut(),
+            len: 0,
         }
     }
 
@@ -34,7 +36,7 @@ impl<T> Queue<T> {
         if self.tail.is_null() {
             self.tail = &mut *item;
         }
-
+        self.len +=1;
         self.head = Some(item);
     }
 
@@ -51,7 +53,7 @@ impl<T> Queue<T> {
                 (*self.tail).next = Some(item);
             }
         }
-
+        self.len +=1;
         self.tail = new_tail;
     }
 
@@ -72,7 +74,6 @@ impl<T> Queue<T> {
                 }
             }
         }
-
         self.head()
     }
 }

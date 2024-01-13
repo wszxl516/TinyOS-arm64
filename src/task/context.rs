@@ -4,7 +4,7 @@ use core::arch::asm;
 use crate::arch::reg::DAIF;
 use crate::arch::trap::context::Context;
 use crate::mm::PhyAddr;
-use crate::task::scheduler::current;
+use crate::task::scheduler;
 use crate::task::task::TaskFn;
 
 #[no_mangle]
@@ -60,19 +60,33 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    pub const fn default() -> Self {
-        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    pub fn entry() -> ! {
+        DAIF::Irq.enable();
+        match scheduler::current() {
+            None => { panic!("no current!") }
+            Some(task) => {
+                unsafe {
+                    let entry = &(*task).entry;
+                    match entry {
+                        TaskEntry::Kernel { pc, arg } => {
+                            let entry: TaskFn = core::mem::transmute(*pc);
+                            let code = entry(*arg);
+                            (*task).exit(code);
+                            scheduler::exit_current(code)
+                        }
+                        TaskEntry::User(tf) => {
+                            tf.exec((*task).k_stack.top());
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    pub fn init(&mut self, entry: usize, stack_top: usize, page_table_root: PhyAddr) {
-        self.sp = stack_top;
-        self.lr = entry ;
-        self.ttbr0_el1 = page_table_root.as_usize();
-    }
-    pub fn new(stack: usize) -> Self {
+    pub fn new(stack_top: usize, page_table_root: PhyAddr) -> Self {
         Self {
-            lr: task_entry as usize,
-            sp: stack,
+            lr: Self::entry as usize,
+            sp: stack_top,
             tpidr_el0: 0,
             r19: 0,
             r20: 0,
@@ -85,35 +99,24 @@ impl TaskContext {
             r27: 0,
             r28: 0,
             r29: 0,
-            ttbr0_el1: 0,
+            ttbr0_el1: page_table_root.as_usize(),
         }
     }
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum Entry {
+pub enum TaskEntry {
     Kernel { pc: usize, arg: usize },
     User(Box<Context>),
 }
 
-pub fn task_entry() -> ! {
-    DAIF::Irq.enable();
-    match current() {
-        None => { panic!("no current!") }
-        Some(task) => {
-            unsafe {
-                let entry = &(*task).entry;
-                match entry {
-                    Entry::Kernel { pc, arg } => {
-                        let entry: TaskFn = core::mem::transmute(*pc);
-                        entry(*arg);
-                    }
-                    Entry::User(tf) => {
-                        tf.exec((*task).k_stack.top());
-                    }
-                }
-            }
-        }
+impl TaskEntry {
+    pub fn new_kernel(pc: usize, arg: usize)-> Self{
+        TaskEntry::Kernel {pc, arg}
+    }
+    pub fn new_user(entry: usize, stack_top: usize) -> Self{
+        TaskEntry::User(Box::new(Context::new_user(entry, stack_top)))
     }
 }
+

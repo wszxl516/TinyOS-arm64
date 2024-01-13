@@ -1,6 +1,6 @@
 use crate::align_up;
-use crate::mm::heap::page_alloc;
 use crate::mm::{PAGE_SIZE, PageTable, PhyAddr, PTEFlags, VirtAddr};
+use crate::mm::heap::page_alloc;
 
 #[repr(transparent)]
 pub struct UserSpace{
@@ -31,7 +31,7 @@ impl UserSpace{
         self.page.map_area(stack_start, stack_addr.as_phy(), Self::USR_STACK_SIZE, PTEFlags::RW | PTEFlags::U, true);
         (text_start.as_usize(), stack_start.as_usize() + Self::USR_STACK_SIZE)
     }
-    pub const fn root_phy_addr(&self) -> PhyAddr{
-        self.page.root_phy_addr()
+    pub const fn root_addr(&self) -> PhyAddr{
+        self.page.root_addr()
     }
 }

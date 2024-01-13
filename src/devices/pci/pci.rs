@@ -1,5 +1,6 @@
-use bitflags::bitflags;
 use core::fmt::{Debug, Display, Formatter};
+
+use bitflags::bitflags;
 use tock_registers::register_bitfields;
 use tock_registers::registers::ReadWrite;
 

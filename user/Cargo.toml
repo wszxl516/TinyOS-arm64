@@ -14,3 +14,4 @@ name = "std"
 path = "src/lib.rs"
 
 [dependencies]
+arrayvec = { version = "0.7.2", default-features = false }

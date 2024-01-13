@@ -5,7 +5,7 @@ use crate::mm::page::{PAGE_ENTRY_COUNT, PHYS_VIRT_OFFSET, VA_MAX_BITS};
 
 use super::{BLOCK_2M, PAGE_SIZE};
 
-pub const PA_1TB_BITS: usize = 40;
+pub const PA_1TB_BITS: usize = 48;
 
 
 #[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]

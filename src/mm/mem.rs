@@ -6,7 +6,7 @@ use crate::config::{
     GICC_BASE, GICC_SIZE, GICD_BASE, GICD_SIZE, MEM_SIZE, PCIE_CONFIG_SPACE_START,
     PCIE_MEM_64_START, UART_ADDRESS,
 };
-use crate::mm::{PAGE_SIZE, PageTable, PhyAddr, PTEFlags, VirtAddr};
+use crate::mm::{BLOCK_2M, PAGE_SIZE, PageTable, PhyAddr, PTEFlags, VirtAddr};
 use crate::mm::flush::{dsb_all, isb_all, tlb_all};
 
 use super::super::common::sync::Mutex;
@@ -32,7 +32,7 @@ pub fn init_kernel_space() {
     match KERNEL_SPACE.lock() {
         mut lock => {
             pr_delimiter!();
-            pr_address!("pcie", VirtAddr::from_phy(PCIE_CONFIG_SPACE_START), PAGE_SIZE * 0x200, PTEFlags::RW | PTEFlags::D);
+            pr_address!("pcie", VirtAddr::from_phy(PCIE_CONFIG_SPACE_START), BLOCK_2M, PTEFlags::RW | PTEFlags::D);
             //pcie config space
             lock.map_block_2m(
                 VirtAddr::from_phy(PCIE_CONFIG_SPACE_START),
@@ -40,7 +40,7 @@ pub fn init_kernel_space() {
                 PTEFlags::RW | PTEFlags::D,
                 true,
             );
-            pr_address!("", VirtAddr::from_phy(PCIE_MEM_64_START), PAGE_SIZE * 0x200, PTEFlags::RW | PTEFlags::D);
+            pr_address!("", VirtAddr::from_phy(PCIE_MEM_64_START), BLOCK_2M, PTEFlags::RW | PTEFlags::D);
             //pcie mem64
             lock.map_block_2m(
                 VirtAddr::from_phy(PCIE_MEM_64_START),
@@ -66,7 +66,7 @@ pub fn init_kernel_space() {
         PhyAddr::new(start),
         size,
         PTEFlags::RW | PTEFlags::D,
-        "gicd",
+        "gic",
     );
     //gicc
     let (start, size) = (GICC_BASE, GICC_SIZE);
@@ -75,7 +75,7 @@ pub fn init_kernel_space() {
         PhyAddr::new(start),
         size,
         PTEFlags::RW | PTEFlags::D,
-        "gicc",
+        "",
     );
 
     //text
@@ -167,7 +167,7 @@ pub fn init_kernel_space() {
     );
     pr_delimiter!();
     let kernel_space = KERNEL_SPACE.lock();
-    let page_table_root = kernel_space.root_phy_addr();
+    let page_table_root = kernel_space.root_addr();
     enable_table(page_table_root.as_usize(), true);
     enable_table(0, false);
 }

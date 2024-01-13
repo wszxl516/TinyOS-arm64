@@ -1,45 +1,57 @@
 use alloc::string::String;
-use crate::{pr_err, print};
-use crate::arch::psci::psci_cpu_off;
-use crate::arch::reg::DAIF;
-use crate::arch::trap::context::Context;
-use crate::devices::gets;
+use alloc::vec;
 
-const SYSCALL_SHUTDOWN: usize = 0;
+use crate::{pr_err, print};
+use crate::arch::psci::{psci_cpu_off, psci_cpu_rest};
+use crate::devices::gets;
+use crate::mm::{UserBuffer, UserPtr};
+use crate::task::scheduler;
+
+const SYSCALL_SHUTDOWN: usize = 142;
 const SYSCALL_READ: usize = 63;
 const SYSCALL_WRITE: usize = 64;
+const SYSCALL_EXIT: usize = 93;
 
 #[no_mangle]
-pub fn syscall(context: &mut Context)  {
-    DAIF::Irq.disable();
-    let syscall_id = context.reg[8];
+pub fn syscall(syscall_id: usize, args: [usize; 6]) -> usize {
     match syscall_id {
-        SYSCALL_WRITE => {
-            match context.reg[0] {
-                1 => {
-                    let s = unsafe { String::from_utf8_lossy(core::slice::from_raw_parts(context.reg[1] as *const u8, context.reg[2]))};
-                    print!("{}", s);
-                    context.reg[0] = context.reg[2]
-                }
-                _ => {}
+        SYSCALL_WRITE => sys_write(args[0], UserPtr::<u8>::new(args[1], args[2])),
+        SYSCALL_READ => sys_read(args[0], &mut UserPtr::<u8>::new(args[1], args[2])),
+        SYSCALL_SHUTDOWN =>{
+            match args[0] {
+                0 => psci_cpu_off(),
+                _ => psci_cpu_rest()
             }
         },
-        SYSCALL_READ => {
-            match context.reg[0] {
-                0 => {
-                    let mut buffer = [0u8;1];
-                    context.reg[0] = gets(&mut buffer);
-                    unsafe { (context.reg[1] as *mut u8).write(buffer[0]) };
-                }
-                _ => {}
-            }
-        },
-        SYSCALL_SHUTDOWN => {
-            psci_cpu_off()
-        }
+        SYSCALL_EXIT => scheduler::exit_current(args[0] as isize),
         _ => {
             pr_err!("Unsupported syscall_id: {}\n", syscall_id);
+            0
         }
-    };
-    DAIF::Irq.enable();
+    }
+}
+
+pub fn sys_write(fd: usize, ptr :UserPtr<u8>)-> usize{
+    let ret = ptr.len();
+    match fd {
+        1 => {
+            print!("{}",String::copy_from_user(ptr).unwrap());
+        }
+        _ => {}
+    }
+    ret
+}
+
+
+pub fn sys_read(fd: usize, ptr: &mut UserPtr<u8>)-> usize{
+    let ret;
+    match fd {
+        0 => {
+            let mut buffer = vec![0; ptr.len()];
+            ret = gets(&mut buffer);
+            buffer.copy_to_user(ptr);
+        }
+        _ => unreachable!()
+    }
+    ret
 }

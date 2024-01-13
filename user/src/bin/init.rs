@@ -3,21 +3,43 @@
 
 extern crate std;
 
-use std::{pr_notice, pr_info, read_key, shutdown, sleep_ms};
+use std::{pr_notice, shutdown, reboot, sleep_ms, read_line};
+use arrayvec::ArrayString;
 
 #[no_mangle]
-pub fn main() -> ! {
-    pr_info!("Ctrl-q to shutdown\n");
+pub fn main() -> isize {
+    run_loop();
+    0
+}
+pub fn run_loop() {
+    pr_notice!("User shell started !!!\n");
+    let mut line =  ArrayString::new();
     loop {
-        let key = read_key!();
-        match key as u8 {
-            0x11 => {
-                pr_notice!("shutdown\n");
+        pr_notice!("#>>");
+        line.clear();
+        read_line::<64>(&mut line);
+        if line.is_empty() {
+            continue
+        }
+        match line.as_str() {
+            "exit" => {
+                pr_notice!("\nexit!\n");
+                break
+            }
+            "shutdown" => {
+                pr_notice!("\nshutdown!\n");
                 shutdown()
             },
-            0 => {}
-            _ => pr_notice!("{}\n", key),
+            "reboot" => {
+                pr_notice!("\nreboot!\n");
+                reboot()
+            }
+            "help" | _=> {
+                pr_notice!("\ncommand: \n\texit shutdown reboot help.\n");
+            }
         }
-        sleep_ms(10);
+        sleep_ms(20);
+
     }
+
 }

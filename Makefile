@@ -22,7 +22,7 @@ define QEMU_ARGS_RUN
 		-m 128M \
 		-cpu cortex-a72 \
 		-machine virt,gic-version=2,acpi=off \
-		-chardev stdio,id=ttys0,signal=off \
+		-chardev stdio,id=ttys0,signal=on \
 		-serial chardev:ttys0 \
 		-d in_asm,mmu -D ./qemu.log \
 		-monitor tcp::1122,server,nowait, \

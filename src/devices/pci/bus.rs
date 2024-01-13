@@ -1,6 +1,8 @@
 use core::fmt::{Debug, Formatter};
+
 use arrayvec::{ArrayString, ArrayVec};
 use fdt::node::FdtNode;
+
 use crate::devices::macros::fdt_get;
 use crate::devices::pci::pci::Header0;
 use crate::mm::PhyAddr;
