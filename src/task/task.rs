@@ -19,6 +19,7 @@ static BIN_INIT: &[u8] = include_bytes!(env!("INIT_BIN"));
 
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct Task {
     pub name: String,
     pub state: TaskState,

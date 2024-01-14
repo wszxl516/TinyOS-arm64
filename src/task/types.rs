@@ -4,6 +4,8 @@ use alloc::vec;
 use core::sync::atomic::{AtomicU32, Ordering};
 
 #[repr(transparent)]
+#[derive(Clone)]
+
 pub struct KernelStack<const N: usize>(Box<[u8]>);
 
 impl<const N: usize> KernelStack<N> {

@@ -105,7 +105,7 @@ impl TaskContext {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TaskEntry {
     Kernel { pc: usize, arg: usize },
     User(Box<Context>),

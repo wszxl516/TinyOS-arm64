@@ -1,8 +1,13 @@
 #![allow(dead_code)]
+
+use core::alloc::{GlobalAlloc, Layout};
+
+use lazy_static::lazy_static;
+
 use crate::{addr2slice, align_up};
 use crate::mm::attr::PTEFlags;
 use crate::mm::entry::PTE;
-use crate::mm::heap::{page_alloc};
+use crate::mm::heap::{LockedHeap, page_alloc};
 
 use super::{KERNEL_START, PAGE_SIZE, PhyAddr, VirtAddr};
 
@@ -10,7 +15,31 @@ pub const PHYS_VIRT_OFFSET: usize = KERNEL_START;
 pub const VA_MAX_BITS: usize = 48;
 pub const PAGE_ENTRY_COUNT: usize = 512;
 
+lazy_static!{
+    static ref PTALLOCATOR: LockedHeap = {
+        let pt = LockedHeap::empty();
+        let addr = page_alloc(PAGE_SIZE);
+        pt.init(addr.as_usize(), PAGE_SIZE * PAGE_SIZE);
+        pt
+    };
+}
 
+#[allow(dead_code)]
+pub fn frame_alloc(pages: usize) -> VirtAddr {
+    let layout = Layout::from_size_align(pages * PAGE_SIZE, PAGE_SIZE).unwrap();
+    let addr = unsafe { PTALLOCATOR.alloc_zeroed(layout) };
+    VirtAddr::new(addr.addr())
+}
+
+#[allow(dead_code)]
+pub fn frame_free(start: VirtAddr, pages: usize) {
+    unsafe {
+        PTALLOCATOR.dealloc(
+            start.as_mut_ptr(),
+            Layout::from_size_align(pages * PAGE_SIZE, PAGE_SIZE).unwrap(),
+        )
+    }
+}
 #[derive(Default, Copy, Clone, Debug)]
 pub struct PageTable {
     root_addr: PhyAddr,
@@ -27,10 +56,10 @@ impl PageTable {
         }
     }
     pub fn init(&mut self) {
-        self.root_addr = self.alloc_page()
+        self.root_addr = frame_alloc(1).as_phy()
     }
     fn alloc_page(&mut self) -> PhyAddr {
-        page_alloc(1).as_phy()
+        frame_alloc(1).as_phy()
     }
     pub const fn root_addr(&self) -> PhyAddr {
         self.root_addr

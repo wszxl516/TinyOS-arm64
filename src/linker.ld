@@ -50,8 +50,8 @@ SECTIONS
 
     .symbols : ALIGN(4k){
         __symbols_start = .;
-        //200k symbol_table
-        . += 200k;
+        //256k symbol_table
+        . += 256k;
         __symbols_end = .;
     }:RO_DATA
 

@@ -3,6 +3,7 @@ use crate::mm::{PAGE_SIZE, PageTable, PhyAddr, PTEFlags, VirtAddr};
 use crate::mm::heap::page_alloc;
 
 #[repr(transparent)]
+#[derive(Clone)]
 pub struct UserSpace{
     page: PageTable
 }

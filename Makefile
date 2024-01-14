@@ -34,7 +34,7 @@ endef
 kernel: user
 	@echo Build $@
 	@INIT_BIN=$(OUT_DIR)/init.bin cargo build --features=$(FEATURES)
-	@$(call generate_symbols, $(OUT_DIR)/$(KERNEL_TARGET), $(OUT_DIR)/symbol_section , 204800) > symbols.log
+	@$(call generate_symbols, $(OUT_DIR)/$(KERNEL_TARGET), $(OUT_DIR)/symbol_section , 262144) > symbols.log
 	@rust-objcopy --update-section .symbols=$(OUT_DIR)/symbol_section --set-section-flags .symbols=data,contents,alloc,load $(OUT_DIR)/$(KERNEL_TARGET)
 
 $(KERNEL_BINARY): kernel

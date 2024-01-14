@@ -67,10 +67,10 @@ impl<T> TaskQueue<T> {
             if self.head.is_none() {
                 self.head = Some(head);
             } else {
-                let p_tail = self.tail;
+                let tail = self.tail;
                 self.tail = &mut *head;
                 unsafe {
-                    (*p_tail).next = Some(head);
+                    (*tail).next = Some(head);
                 }
             }
         }
